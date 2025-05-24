@@ -54,7 +54,7 @@ EXEC ddbbaTP.InsertarSocio
     NULL, --Id de su resposnable
 	'Moroso'
 -----------------------------------------P3
-
+select * from ddbbaTP.Socio
 --Debe provocarse un error de integridad referencial (2 no es un ID existente en la tabla ddbbaTP.Categoria)
 	EXEC ddbbaTP.InsertarSocio
     40200111,
@@ -68,6 +68,69 @@ EXEC ddbbaTP.InsertarSocio
     '12345678',
     NULL, --ID_Grupo Familiar
     2,
+    NULL, --Id de su resposnable
+	'Moroso'
+
+--Debe provocar un error de conflicto por no respetar la reestricción DNI BETWEEN 10000000 AND 99999999
+	EXEC ddbbaTP.InsertarSocio
+    4567872 ,
+	'Lucas',
+    'Martínez',
+    'lucas.martinez@mail.com',
+    '1995-01-20',
+    '1123411115',
+    '1166724567',
+    'OSDE',
+    '12345678',
+    NULL, --ID_Grupo Familiar
+    1,
+    NULL, --Id de su resposnable
+	'Moroso'
+---- Debe provocar un error por no respetar el tipo de dato que se espera en campo nombre: VARCHAR
+--	EXEC ddbbaTP.InsertarSocio
+--    40200111,
+--    1,
+--    'Martínez',
+--    'lucas.martinez@mail.com',
+--    '1995-01-20',
+--    '1123411115',
+--    '1166724567',
+--    'OSDE',
+--    '12345678',
+--    NULL, --ID_Grupo Familiar
+--    1,
+--    NULL, --Id de su resposnable
+--	'Moroso'
+
+--Debe provocar un error por superar la cantidad de caracteres en Apellido
+	--EXEC ddbbaTP.InsertarSocio
+ --   40200111,
+ --   'Lucas',
+ --   'MartínezMartínezMartínezMartínezMartínezMartínezMartínezaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+ --   'lucas.martinez@mail.com',
+ --   '1995-01-20',
+ --   '1123411115',
+ --   '1166724567',
+ --   'OSDE',
+ --   '12345678',
+ --   NULL, --ID_Grupo Familiar
+ --   1,
+ --   NULL, --Id de su resposnable
+	--'Moroso'
+
+--Debe provocar un error por superar la fecha actual
+	EXEC ddbbaTP.InsertarSocio
+    40200111,
+    'Lucas',
+    'Martínez',
+    'lucas.martinez@mail.com',
+    '2995-01-20',
+    '1123411115',
+    '1166724567',
+    'OSDE',
+    '12345678',
+    NULL, --ID_Grupo Familiar
+    1,
     NULL, --Id de su resposnable
 	'Moroso'
 -----------------------------------------P4
@@ -145,11 +208,11 @@ EXEC ddbbaTP.InsertarAsiste 12, 1 --Debe provocar un error de integridad referen
 ----------------------------------------- P22
 EXEC ddbbaTP.InsertarAnotadoEn 1, 1 --Debe insertar el registro correctamente
 EXEC ddbbaTP.InsertarAnotadoEn 20, 1 --Debe provocar un error de integridad referencial por NroSocio
-
+ 
 ----------------------------------------- P23
 EXEC ddbbaTP.InsertarInscripto 1, 1 --Debe insertar el registro correctamente
 EXEC ddbbaTP.InsertarAnotadoEn 1, 11 --Debe provocar un error de integridad referencial por IdActividad
-
+ 
 -- =============================================
 -- MODIFICACIÓN
 -- =============================================
