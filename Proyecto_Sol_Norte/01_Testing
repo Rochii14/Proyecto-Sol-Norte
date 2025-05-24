@@ -1,0 +1,188 @@
+/*Entrega 4- Documento de instalación y configuración
+Luego de decidirse por un motor de base de datos relacional, llegó el momento de generar la base de datos. En esta oportunidad utilizarán
+SQL Server. Deberá instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle las configuraciones aplicadas 
+(ubicación de archivos, memoria asignada, seguridad, puertos, etc.) en un documento como el que le entregaría al DBA. Cree la base de datos, 
+entidades y relaciones. Incluya restricciones y claves. Deberá entregar un archivo .sql con el scriptcompleto de creación (debe funcionar 
+si se lo ejecuta “tal cual” es entregado en una sola ejecución). Incluya comentarios para indicar qué hace cada módulo de código.  Genere 
+store procedures para manejar la inserción, modificado, borrado (si corresponde, también debe decidir si determinadas entidades solo admitirán
+borrado lógico) de cada tabla. Los nombres de los store procedures NO deben comenzar con “SP”.  Algunas operaciones implicarán store procedures 
+que involucran varias tablas, uso de transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs. Asegúrense de que 
+los comentarios que acompañen al código lo expliquen. Genere esquemas para organizar de forma lógica los componentes del sistema y aplique esto 
+en la creación de objetos. NO use el esquema “dbo”.  Todos los SP creados deben estar acompañados de juegos de prueba. Se espera que realicen 
+validaciones básicas en los SP (p/e cantidad mayor a cero, CUIT válido, etc.) y que en los juegos de prueba demuestren la correcta aplicación 
+de las validaciones. Las pruebas deben realizarse en un script separado, donde con comentarios se indique en cada caso el resultado esperado
+El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha de entrega, número de grupo, nombre de la materia, 
+nombres y DNI de los alumnos.  Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante la sección de prácticas de 
+MIEL. Solo uno de los miembros del grupo debe hacer la entrega. 
+
+*FECHA DE ENTREGA: 23/05/2025
+*NUMERO DE GRUPO: 08
+*NOMBRE DE LA MATERIA: Base de Datos Aplicadas
+*INTEGRANTES: 45318374 | Di Marco Jazmín
+			  46346548 | Medina Federico Gabriel
+			  42905305 | Mendez Samuel Omar
+			  44588998 | Valdevieso Rocío Elizabeth
+*/
+
+------------------------///////////////////////////CASOS DE TESTING /////////////////////////////////------------------------
+
+-- =============================================
+--					INSERCIÓN
+-- =============================================
+USE Com5600G08
+go
+----------------------------------------- P1
+EXEC ddbbaTP.InsertarCategoria 'Veterano', 45789.12, '2025-10-12', '' --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarCategoria 'Menores', -2, '2025-10-12', 'Inactivo' --Debe provocarse un error por no respetar la validaacion Costo>=0
+select * from ddbbatp.Categoria
+
+----------------------------------------- P2
+select * from ddbbaTP.GrupoFamiliar
+--Debe insertar el registro correctamente, teniendo previos insert en grupo familiar
+EXEC ddbbaTP.InsertarSocio
+    40200111,
+    'Lucía',
+    'Martínez',
+    'lucia.martinez@mail.com',
+    '1995-07-20',
+    '1122334455',
+    '1166778899',
+    'OSDE',
+    '12345678',
+    NULL, --ID_Grupo Familiar
+    1,
+    NULL, --Id de su resposnable
+	'Moroso'
+-----------------------------------------P3
+
+--Debe provocarse un error de integridad referencial (2 no es un ID existente en la tabla ddbbaTP.Categoria)
+	EXEC ddbbaTP.InsertarSocio
+    40200111,
+    'Lucas',
+    'Martínez',
+    'lucas.martinez@mail.com',
+    '1995-01-20',
+    '1123411115',
+    '1166724567',
+    'OSDE',
+    '12345678',
+    NULL, --ID_Grupo Familiar
+    2,
+    NULL, --Id de su resposnable
+	'Moroso'
+-----------------------------------------P4
+EXEC ddbbaTP.InsertarGrupoFamiliar 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarGrupoFamiliar 2 --Debe provocar un error de integridad referencial
+
+----------------------------------------- P5
+EXEC ddbbaTP.InsertarActividad 'Handball', 34550, '2025-11-12', 'Inactivo'  --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarActividad 'Handball', -34550, '2025-11-12', 'Inactivo' --Debe provocar un error de conflicto por no respetar la reestricción Costo>=0
+
+----------------------------------------- P6
+EXEC ddbbaTP.InsertarProfesor 'Gabriel', 'Medina', 'Gabriel@Hotmail', 'Inactivo' --Debe insertar el registro correctamente
+
+----------------------------------------- P7
+EXEC ddbbaTP.InsertarClase '2025-12-02', '17:00:00', 'Lunes', 1, 1, 'Inactivo' --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarClase '1999-12-02', '17:00:00', 'Lunes', 1, 1, 'Inactivo' --Debe provocar un error de conflicto por no respetar la reestricción Fecha>= 2000-01-01
+EXEC ddbbaTP.InsertarClase '1999-12-02', '17:00:00', 'Lunes', 1, 3 --Debe  provocar un error de integridad referencial por Id_Actividad
+
+----------------------------------------- P8
+EXEC ddbbaTP.InsertarCuota 'Impaga', '1' --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarCuota 'Paga', '2' --Debe provocar un error de integridad referencial por NroSocio
+
+----------------------------------------- P9
+EXEC ddbbaTP.InsertarDescuento 'LLuivia', '1', '1', 'Inactivo' --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarDescuento 'Grupo Familiar', '1', '2', 'Inactivo' --Debe provocar un error de integridad referencial por el NroSocio
+
+----------------------------------------- P10
+EXEC ddbbaTP.InsertarFactura  '2025-12-04', 2, 'Impaga', 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarFactura  '2025-12-04', 2, 'Impaga', 1, 2 --Debe provocar un error de integridad referencial por el Id_Cuota
+
+----------------------------------------- P11
+EXEC ddbbaTP.InsertarCuenta 345123, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarCuenta -1, 1 --Debe provocar un error de conflicto por no respetar la reestricción Saldo_Favor>=0
+EXEC ddbbaTP.InsertarCuenta 345123, 3 --Debe provocar un error de integridad referencial por el NroSocio
+
+----------------------------------------- P12
+EXEC ddbbaTP.InsertarMedioDePago '','Tarjeta','Virtaul'--Debe insertar el registro correctamente
+
+----------------------------------------- P13
+EXEC ddbbaTP.InsertarPago '2025-09-12', 1, 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarPago '2025-09-12', 1, 1, 2 --Debe provocar un error de integridad referencial por IdMedioDePago
+
+----------------------------------------- P14
+EXEC ddbbaTP.InsertarReembolso 'credito', 1, 2 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarReembolso 'debito', 1, 10 --Debe provocar un error de integridad referencial por IdPago
+
+----------------------------------------- P15
+EXEC ddbbaTP.InsertarInvitado 'Juan Juano', 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarInvitado 'Juan Juano', 1, 10 --Debe provocar un error de integridad referencial por IdFactura
+
+----------------------------------------- P16
+EXEC ddbbaTP.InsertarPasePileta 10000.50, 15000.50, 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarPasePileta 10000.50, 15000.50, 1, 10 --Debe provocar un error de integridad referencial por IdFactura
+EXEC ddbbaTP.InsertarPasePileta -10000.50, 15000.50, 1, 1--Debe provocarse un error por no respetar la validaacion TarifaSocio>=0
+
+----------------------------------------- P17
+EXEC ddbbaTP.InsertarActividadExtra NULL --Debe insertar el registro correctamente
+
+----------------------------------------- P18
+EXEC ddbbaTP.InsertarColonia 1, 13000 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarColonia 3, 13000 --Debe provocar un error de integridad referencial por IdActividadExtra
+
+----------------------------------------- P19
+EXEC ddbbaTP.InsertarSum 1, 13000 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarSum 11, 13000 --Debe provocar un error de integridad referencial por IdActividadExtra
+
+----------------------------------------- P20
+EXEC ddbbaTP.InsertarPileta 1, 1, '2025-12-30' --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarPileta 10, 1, '2025-12-30' --Debe provocar un error de integridad referencial por IdActividadExtra
+
+----------------------------------------- P21
+EXEC ddbbaTP.InsertarAsiste 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarAsiste 12, 1 --Debe provocar un error de integridad referencial por NroSocio
+
+----------------------------------------- P22
+EXEC ddbbaTP.InsertarAnotadoEn 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarAnotadoEn 20, 1 --Debe provocar un error de integridad referencial por NroSocio
+
+----------------------------------------- P23
+EXEC ddbbaTP.InsertarInscripto 1, 1 --Debe insertar el registro correctamente
+EXEC ddbbaTP.InsertarAnotadoEn 1, 11 --Debe provocar un error de integridad referencial por IdActividad
+
+-- =============================================
+-- MODIFICACIÓN
+-- =============================================
+
+----------------------------------------- P1
+EXEC ddbbaTP.ModificarSocio --  Modificar un socio existente (éxito esperado)
+    @NroSocio = 1,
+    @Telefono_Contacto = '1122334455',
+    @Email_Personal = 'nuevoemail@example.com';
+GO
+----------------------------------------- P2
+
+EXEC ddbbaTP.ModificarSocio --  Modificar socio con DNI inválido (error esperado)
+    @NroSocio = 1,
+    @Dni = 1234567; -- DNI inválido (7 dígitos)
+GO
+----------------------------------------- P3
+
+EXEC ddbbaTP.ModificarCategoria       -- Modificar categoría con costo negativo (error esperado)
+    @IdCategoria = 1,
+    @Costo = -100; -- Costo negativo
+GO
+----------------------------------------- P4
+
+EXEC ddbbaTP.ModificarClase      --  Modificar clase con fecha inválida (error esperado)
+    @IdClase = 1,
+    @Fecha = '1999-12-31'; -- Fecha anterior a 2000
+GO
+----------------------------------------- P5
+
+EXEC ddbbaTP.ModificarDescuento       --  Modificar descuento sin especificar grupo o socio (error esperado si no tenía ninguno)
+    @IdDescuento = 1,
+    @Tipo = 'Promoción verano',
+    @IdGrupoFamiliar = NULL,
+    @NroSocio = NULL;
+GO
