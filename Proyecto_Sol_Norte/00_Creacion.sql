@@ -18,7 +18,7 @@ MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
 *FECHA DE ENTREGA: 23/05/2025
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 		  45318374 | Di Marco Jazmín
+*INTEGRANTES: 45318374 | Di Marco Jazmín
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
 			  44588998 | Valdevieso Rocío Elizabeth
@@ -34,7 +34,7 @@ CREATE SCHEMA ddbbaTP
 go
 -- Tabla SOCIO
 CREATE TABLE ddbbaTP.Socio (
-    Nro_Socio INT IDENTITY(1,1) PRIMARY KEY,
+    NroSocio INT IDENTITY(1,1) PRIMARY KEY,
     Dni INT CHECK (Dni BETWEEN 10000000 AND 99999999), --CHEQUEO QUE EL DNI SEA VÁLIDO
     Nombre VARCHAR(50),
     Apellido VARCHAR(50),
@@ -57,7 +57,7 @@ go
 CREATE TABLE ddbbaTP.GrupoFamiliar (
     IdGrupoFamiliar INT IDENTITY(1,1) PRIMARY KEY,
     NroSocio INT,
-    CONSTRAINT FK_GrupoFamiliar_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio)
+    CONSTRAINT FK_GrupoFamiliar_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio)
 );   --2
 go
 -- Tabla CATEGORIA
@@ -102,7 +102,7 @@ CREATE TABLE ddbbaTP.Cuota (
     IdCuota INT IDENTITY(1,1) PRIMARY KEY,
     Estado VARCHAR(20),
     NroSocio INT,
-    CONSTRAINT FK_Cuota_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio)
+    CONSTRAINT FK_Cuota_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio)
 ); --7
 go
 -- Tabla DESCUENTO
@@ -112,7 +112,7 @@ CREATE TABLE ddbbaTP.Descuento (
     IdGrupoFamiliar INT,
     NroSocio INT,
     CONSTRAINT FK_Descuento_GrupoFamiliar FOREIGN KEY (IdGrupoFamiliar) REFERENCES ddbbaTP.GrupoFamiliar(IdGrupoFamiliar),
-    CONSTRAINT FK_Descuento_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio)
+    CONSTRAINT FK_Descuento_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio)
 );  --8
 go
 -- Tabla FACTURA
@@ -132,7 +132,7 @@ CREATE TABLE ddbbaTP.Cuenta (
     IdCuenta INT IDENTITY(1,1) PRIMARY KEY,
     Saldo_Favor DECIMAL(10,2) CHECK (Saldo_Favor >= 0),
     NroSocio INT,
-    CONSTRAINT FK_Cuenta_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio)
+    CONSTRAINT FK_Cuenta_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio)
 );  --10
 go
 -- Tabla MEDIO DE PAGO
@@ -172,7 +172,7 @@ CREATE TABLE ddbbaTP.Invitado (
     Nro_Socio INT,
     IdFactura INT,
     CONSTRAINT PK_Invitado_Socio PRIMARY KEY (IdInvitado,Nro_Socio),
-	CONSTRAINT FK_Invitado_Socio FOREIGN KEY (Nro_Socio) REFERENCES ddbbaTP.Socio(Nro_Socio),
+	CONSTRAINT FK_Invitado_Socio FOREIGN KEY (Nro_Socio) REFERENCES ddbbaTP.Socio(NroSocio),
     CONSTRAINT FK_Invitado_Factura FOREIGN KEY (IdFactura) REFERENCES ddbbaTP.Factura(IdFactura)
 ); --14
 go
@@ -218,7 +218,7 @@ CREATE TABLE ddbbaTP.Asiste (
     NroSocio INT,
     IdClase INT,
     CONSTRAINT PK_Asiste PRIMARY KEY (NroSocio, IdClase),
-    CONSTRAINT FK_Asiste_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio),
+    CONSTRAINT FK_Asiste_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio),
     CONSTRAINT FK_Asiste_Clase FOREIGN KEY (IdClase) REFERENCES ddbbaTP.Clase(IdClase)
 ); --20
 go
@@ -226,7 +226,7 @@ CREATE TABLE ddbbaTP.Anotado_En (
     NroSocio INT,
     IdClase INT,
      CONSTRAINT PK_Anotado_En PRIMARY KEY (NroSocio, IdClase),
-    CONSTRAINT FK_Anotado_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(Nro_Socio),
+    CONSTRAINT FK_Anotado_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP.Socio(NroSocio),
     CONSTRAINT FK_Anotado_Clase FOREIGN KEY (IdClase) REFERENCES ddbbaTP.Clase(IdClase)
 ); --21
 go
@@ -234,7 +234,7 @@ CREATE TABLE ddbbaTP.Inscripto (
     NroSocio INT,
     IdActividad INT,
     CONSTRAINT PK_Inscripto PRIMARY KEY (NroSocio, IdActividad),
-    CONSTRAINT FK_Inscripto_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP. Socio(Nro_Socio),
+    CONSTRAINT FK_Inscripto_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP. Socio(NroSocio),
     CONSTRAINT FK_Inscripto_Actividad FOREIGN KEY (IdActividad) REFERENCES ddbbaTP.Actividad(IdActividad)
 ); --22
 go
@@ -243,7 +243,7 @@ CREATE TABLE ddbbaTP.Realiza(
 	IdActividadExtra INT,
 	Fecha DATE CHECK (Fecha >= '2000-01-01'), --valido fecha
 	CONSTRAINT PK_Realiza PRIMARY KEY (NroSocio, IdActividadExtra),
-	CONSTRAINT FK_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP. Socio(Nro_Socio),
+	CONSTRAINT FK_Socio FOREIGN KEY (NroSocio) REFERENCES ddbbaTP. Socio(NroSocio),
     CONSTRAINT FK_Inscripto_Actividad_Extra FOREIGN KEY (IdActividadExtra) REFERENCES ddbbaTP.ActividadExtra(IdActExtra)
 ) --23
 go
@@ -278,7 +278,7 @@ IF NOT EXISTS (
     SELECT * FROM sys.foreign_keys WHERE name = 'FK_Socio_A_Cargo'
 )
 ALTER TABLE ddbbaTP.Socio
-ADD CONSTRAINT FK_Socio_A_Cargo FOREIGN KEY (NroSocio2) REFERENCES ddbbaTP.Socio(Nro_Socio);
+ADD CONSTRAINT FK_Socio_A_Cargo FOREIGN KEY (NroSocio2) REFERENCES ddbbaTP.Socio(NroSocio);
 GO
 ALTER TABLE ddbbaTP.Categoria ADD Estado VARCHAR(10) DEFAULT 'Activo';
 GO
@@ -298,14 +298,14 @@ ALTER TABLE ddbbaTP.Reembolso ADD Monto  DECIMAL(10,2);
 GO
 ALTER TABLE ddbbaTP.Invitado ADD Dni INT CHECK (Dni BETWEEN 10000000 AND 99999999); --CHEQUEO QUE EL DNI SEA VÁLIDO
 GO
-ALTER TABLE ddbbaTP.Inscripto ADD Fecha_Inscripcion DATE  DEFAULT GETDATE();
+ALTER TABLE ddbbaTP.Inscripto ADD FechaInscripcion DATE  DEFAULT GETDATE();
 GO
 ALTER TABLE ddbbaTP.Anotado_En ADD FechaInscripcionA DATE  DEFAULT GETDATE();
 GO
 
-ALTER TABLE ddbbaTP.Colonia ADD Fecha_Fin DATE  DEFAULT GETDATE();
+ALTER TABLE ddbbaTP.Colonia ADD FechaFin DATE  DEFAULT GETDATE();
 GO
-ALTER TABLE ddbbaTP.Colonia ADD Fecha_Inicio DATE  DEFAULT GETDATE();
+ALTER TABLE ddbbaTP.Colonia ADD FechaInicio DATE  DEFAULT GETDATE();
 GO
 ALTER TABLE ddbbaTP.Descuento ADD Porcentaje INT CHECK (Porcentaje >= 0);
 go
@@ -707,7 +707,7 @@ BEGIN
     SET NOCOUNT ON;
     
     -- Validar que el socio exista
-    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -721,7 +721,7 @@ BEGIN
     END
     
     -- Validar que el socio a cargo exista si se proporciona
-    IF @NroSocio2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio2)
+    IF @NroSocio2 IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio2)
     BEGIN
         RAISERROR('El socio a cargo con número %d no existe', 16, 1, @NroSocio2);
         RETURN;
@@ -740,7 +740,7 @@ BEGIN
             IdGrupoFamiliar = ISNULL(@IdGrupoFamiliar, IdGrupoFamiliar),
             IdCategoria = ISNULL(@IdCategoria, IdCategoria),
             NroSocio2 = ISNULL(@NroSocio2, NroSocio2)
-        WHERE Nro_Socio = @NroSocio;
+        WHERE NroSocio = @NroSocio;
         
         PRINT 'Socio modificado correctamente';
     END TRY
@@ -767,7 +767,7 @@ BEGIN
     END
     
     -- Validar que el socio exista si se proporciona
-    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -988,7 +988,7 @@ BEGIN
     END
     
     -- Validar que el socio exista si se proporciona
-    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -1050,7 +1050,7 @@ BEGIN
     END
     
     -- Validar que el socio exista si se proporciona
-    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -1136,8 +1136,8 @@ BEGIN
 	BEGIN TRY
 		UPDATE ddbbaTP.Colonia
 		SET Precio = ISNULL(@Precio, Precio),
-			Fecha_Fin = ISNULL(@FechaFin, Fecha_Fin),
-			Fecha_Inicio = ISNULL(@FechaInicio, Fecha_Inicio)
+			FechaFin = ISNULL(@FechaFin, FechaFin),
+			FechaInicio = ISNULL(@FechaInicio, FechaInicio)
 		WHERE @IdActExtra = IdActividadExtra;
 		PRINT 'Colonia modificada correctamente';
 	END TRY
@@ -1236,7 +1236,7 @@ BEGIN
     END
     
     -- Validar que el socio exista
-    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -1278,7 +1278,7 @@ BEGIN
     SET NOCOUNT ON;
 
     -- Validar que el socio exista
-    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe.', 16, 1, @NroSocio);
         RETURN;
@@ -1310,7 +1310,7 @@ BEGIN
 
     BEGIN TRY
         UPDATE ddbbaTP.Inscripto
-        SET Fecha_Inscripcion = ISNULL(@FechaInscripcion, Fecha_Inscripcion)
+        SET FechaInscripcion = ISNULL(@FechaInscripcion, FechaInscripcion)
         WHERE NroSocio = @NroSocio AND IdActividad = @IdActividad;
 
         PRINT 'Inscripción modificada correctamente.';
@@ -1339,7 +1339,7 @@ BEGIN
     END
 
     -- Validar que el socio exista
-    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe.', 16, 1, @NroSocio);
         RETURN;
@@ -1533,7 +1533,7 @@ BEGIN
     END
     
     -- Validar que el socio exista si se proporciona
-    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE Nro_Socio = @NroSocio)
+    IF @NroSocio IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
     BEGIN
         RAISERROR('El socio con número %d no existe', 16, 1, @NroSocio);
         RETURN;
@@ -1663,12 +1663,12 @@ CREATE PROCEDURE ddbbaTP.BorrarSocio
     @Nro_Socio INT
 AS
 BEGIN
-    IF NOT EXISTS (select 1 from ddbbaTP.Socio where Nro_Socio=@Nro_Socio)
+    IF NOT EXISTS (select 1 from ddbbaTP.Socio where NroSocio=@Nro_Socio)
     BEGIN 
         RAISERROR('El socio %d no existe',16,1, @Nro_Socio);
         RETURN;
     END
-    UPDATE ddbbaTP.Socio SET Estado='Inactivo' where Nro_Socio=@Nro_Socio;
+    UPDATE ddbbaTP.Socio SET Estado='Inactivo' where NroSocio=@Nro_Socio;
 END
 GO
 
@@ -1930,8 +1930,3 @@ BEGIN
     DELETE FROM ddbbaTP.Realiza WHERE NroSocio = @NroSocio AND IdActividadExtra = @IdActividadExtra
 END
 GO
-
-
-
- 
-
