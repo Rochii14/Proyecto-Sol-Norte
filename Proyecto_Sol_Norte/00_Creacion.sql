@@ -25,9 +25,9 @@ MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
 */
 
 -------------------------------------CREACIÓN DE OBJETOS-------------------------------
-CREATE DATABASE TP
+CREATE DATABASE Com5600G08
 GO 
-USE TP
+USE Com5600G08
 go
 
 CREATE SCHEMA ddbbaTP
