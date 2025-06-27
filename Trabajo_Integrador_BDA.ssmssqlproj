@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<SqlWorkbenchSqlProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="Trabajo_Integrador_BDA">
+  <Items>
+    <LogicalFolder Name="Connections" Type="2" Sorted="true">
+      <Items />
+    </LogicalFolder>
+    <LogicalFolder Name="Queries" Type="0" Sorted="true">
+      <Items>
+        <FileNode Name="00_Creacion.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>00_Creacion.sql</FullPath>
+        </FileNode>
+        <FileNode Name="01_SP_Importar_RP_.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>01_SP_Importar_RP_.sql</FullPath>
+        </FileNode>
+        <FileNode Name="02_Insert_Update_Delete.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>02_Insert_Update_Delete.sql</FullPath>
+        </FileNode>
+        <FileNode Name="03_Combinar_Datos_.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>03_Combinar_Datos_.sql</FullPath>
+        </FileNode>
+        <FileNode Name="04_SP_Importar_GF.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>04_SP_Importar_GF.sql</FullPath>
+        </FileNode>
+        <FileNode Name="05_Testing.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>05_Testing.sql</FullPath>
+        </FileNode>
+        <FileNode Name="06_SP_Importar_Tarifas.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>06_SP_Importar_Tarifas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="07_SP_Importar_Presentismo.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>07_SP_Importar_Presentismo.sql</FullPath>
+        </FileNode>
+        <FileNode Name="08_SP_importar_Clima.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>08_SP_importar_Clima.sql</FullPath>
+        </FileNode>
+        <FileNode Name="09_SP_Importar_Pagos_Cuotas.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>09_SP_Importar_Pagos_Cuotas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="10_Reportes.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>10_Reportes.sql</FullPath>
+        </FileNode>
+        <FileNode Name="11_Asignar_Roles.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>11_Asignar_Roles.sql</FullPath>
+        </FileNode>
+        <FileNode Name="12_Cifrado.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>12_Cifrado.sql</FullPath>
+        </FileNode>
+        <FileNode Name="13_Informes_5_XML.sql">
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
+          <AssociatedConnUserName />
+          <FullPath>13_Informes_5_XML.sql</FullPath>
+        </FileNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Miscellaneous" Type="3" Sorted="true">
+      <Items />
+    </LogicalFolder>
+  </Items>
+</SqlWorkbenchSqlProject>
