@@ -3,14 +3,14 @@
 *COMISION:5600
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco Jazmín
+*INTEGRANTES: 45318374 | Di Marco JazmÃ­n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso Rocío Elizabeth
+			  44588998 | Valdevieso RocÃ­o Elizabeth
 */
 USE Com5600G08
 go
-----------importo los datos que están en archivo de los pagos
+----------importo los datos que estÃ¡n en archivo de los pagos
 CREATE OR ALTER PROCEDURE ddbbaTP.Importar_Pagos 
     @rutaArchivo VARCHAR(200)
 AS
@@ -186,7 +186,7 @@ BEGIN
         SET @FechaNacimientoSocioDATE = TRY_CONVERT(DATE, @FechaNacimientoSocio, 103);
         IF @FechaNacimientoSocioDATE IS NULL
         BEGIN
-            THROW 50000, 'La fecha de nacimiento del socio no es válida o está en un formato incorrecto.', 1;
+            THROW 50000, 'La fecha de nacimiento del socio no es vÃ¡lida o estÃ¡ en un formato incorrecto.', 1;
         END
 
         -- Calcular edad
@@ -197,7 +197,7 @@ BEGIN
                       ELSE 0
             END;
 
-        -- Determinar el monto según tipo
+        -- Determinar el monto segÃºn tipo
         IF @Tipo = 'Categoria'
         BEGIN
             EXEC ddbbaTP.Asignar_Monto_Categoria @EdadS = @EdadSocio, @MontoBaseS = @MontoBase OUTPUT;
@@ -209,7 +209,7 @@ BEGIN
         END
         ELSE IF @Tipo = 'Actividad'
         BEGIN
-            -- Si @NombreActividad es NULL o vacío, intentar obtener la última actividad inscrita
+            -- Si @NombreActividad es NULL o vacÃ­o, intentar obtener la Ãºltima actividad inscrita
             IF @NombreActividad IS NULL OR @NombreActividad = ''
             BEGIN
                 SELECT TOP 1 @NombreActividad = a.Nombre
@@ -222,13 +222,13 @@ BEGIN
 
             IF @NombreActividad IS NULL OR @NombreActividad = ''
             BEGIN
-                THROW 50001, 'El socio no tiene inscripciones válidas con fecha correcta (d/m/yyyy) o no se especificó una actividad.', 1;
+                THROW 50001, 'El socio no tiene inscripciones vÃ¡lidas con fecha correcta (d/m/yyyy) o no se especificÃ³ una actividad.', 1;
             END
 
             -- Para actividades, usar el procedimiento Asignar_Monto_Actividad
             EXEC ddbbaTP.Asignar_Monto_Actividad @NombreAct = @NombreActividad, @MontoBaseS = @MontoBase OUTPUT;
 
-            -- Verificar si tiene más de una actividad para descuento
+            -- Verificar si tiene mÃ¡s de una actividad para descuento
             SELECT @CantAct = COUNT(*) FROM ddbbaTP.Inscripto
             WHERE NroSocio = @NroSocio;
             IF @CantAct > 1
@@ -238,7 +238,7 @@ BEGIN
         END
         ELSE
         BEGIN
-            THROW 50000, 'Tipo de cuota no válido. Debe ser "Categoria" o "Actividad".', 1;
+            THROW 50000, 'Tipo de cuota no vÃ¡lido. Debe ser "Categoria" o "Actividad".', 1;
         END
 
         -- Calcular monto final
@@ -285,7 +285,7 @@ BEGIN
 END;
 GO
 
----------->comprobación de que se inserta y modifica la factura
+---------->comprobaciÃ³n de que se inserta y modifica la factura
 select * from ddbbaTP.Factura
 go
 execute ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades @NroSocio ='SN-4139', @Tipo ='Actividad' , @NombreActividad='Futsal'
@@ -295,8 +295,9 @@ go
 --------------------------------------------------------------------------------------------------------------------------------
 ---------HACER GENERAR FACTURA ACTIVIDAD EXTRA
 CREATE OR ALTER PROCEDURE ddbbaTP.GenerarCuotaYFacturaActividadExtra
-    @NroPersona VARCHAR(10),            -- Puede ser NroSocio o IdInvitado (como string)
-    @NombreActividad VARCHAR(50)        -- 'Sum Recreativo', 'Colonia', o 'Pileta'
+    @NroPersona VARCHAR(10), 
+    @NombreActividad VARCHAR(50),
+    @IdMedioPago INT NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -306,149 +307,135 @@ BEGIN
         DECLARE @IdCuota INT, @IdFactura INT, @MontoBase DECIMAL(10,2);
         DECLARE @FechaNacimiento DATE, @Edad INT;
         DECLARE @IdGrupoFamiliar INT = NULL;
-        DECLARE @Responsable VARCHAR(10); -- Será el NroSocio del socio principal o patrocinador
-        DECLARE @FechaVencimiento DATE = DATEADD(DAY, 30, GETDATE());
+        DECLARE @Responsable VARCHAR(10);
+        DECLARE @FechaEmision DATE = GETDATE();
+        DECLARE @FechaVencimiento DATE = DATEADD(DAY, 5, GETDATE());
+        DECLARE @FechaVencimiento2 DATE = DATEADD(DAY, 10, GETDATE());
         DECLARE @EsSocio BIT, @Existe BIT;
-        DECLARE @IdInvitadoInt INT; -- Para la conversión de @NroPersona a INT si es invitado
+        DECLARE @IdInvitadoInt INT;
 
-        PRINT 'DEBUG: Iniciar GenerarCuotaYFacturaActividadExtra para @NroPersona = ' + @NroPersona + ', @NombreActividad = ' + @NombreActividad;
+        PRINT 'DEBUG: Generar para ' + @NroPersona + ', Actividad = ' + @NombreActividad;
 
-        -- 1. Detectar tipo de persona
         EXEC ddbbaTP.Validar_TipoPersona
             @Identificador = @NroPersona,
             @EsSocio = @EsSocio OUTPUT,
             @Existe = @Existe OUTPUT;
 
         IF @Existe = 0
-            THROW 50000, 'El identificador no corresponde a un socio ni a un invitado.', 1;
+            THROW 50000, 'El identificador no corresponde a un socio ni invitado.', 1;
 
-        PRINT 'DEBUG: @EsSocio = ' + CAST(@EsSocio AS VARCHAR(1)) + ', @Existe = ' + CAST(@Existe AS VARCHAR(1));
-
-        -- 2. Obtener fecha de nacimiento y responsable
-        IF @EsSocio = 1 -- La persona es un Socio
+        IF @EsSocio = 1
         BEGIN
             SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),
                    @IdGrupoFamiliar = IdGrupoFamiliar
             FROM ddbbaTP.Socio
             WHERE NroSocio = @NroPersona;
 
-            -- Si el socio pertenece a un grupo familiar, el responsable es el NroSocio principal del grupo.
-            -- De lo contrario, el socio mismo es el responsable.
             SET @Responsable = ISNULL(
                 (SELECT NroSocio FROM ddbbaTP.GrupoFamiliar WHERE IdGrupoFamiliar = @IdGrupoFamiliar),
                 @NroPersona
             );
-            PRINT 'DEBUG: Es Socio. NroSocio responsable = ' + ISNULL(@Responsable, 'NULL') + ', FechaNacimiento = ' + ISNULL(CONVERT(VARCHAR(10), @FechaNacimiento, 120), 'NULL');
         END
-        ELSE -- La persona es un Invitado
+        ELSE
         BEGIN
-            SET @IdInvitadoInt = TRY_CAST(@NroPersona AS INT); -- Convertir el IdInvitado a INT
-
+            SET @IdInvitadoInt = TRY_CAST(@NroPersona AS INT);
             IF @IdInvitadoInt IS NULL
-                THROW 50000, 'El identificador de invitado proporcionado no es un número válido.', 1;
+                THROW 50000, 'IdInvitado no vÃ¡lido.', 1;
 
-            -- Obtener fecha de nacimiento y, CRUCIALMENTE, el Nro_Socio del patrocinador del invitado
             SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),
-                   @Responsable = Nro_Socio -- Aquí obtenemos el Nro_Socio del socio que patrocina al invitado
+                   @Responsable = Nro_Socio
             FROM ddbbaTP.Invitado
             WHERE IdInvitado = @IdInvitadoInt;
 
-            -- Validar que el invitado tenga un socio responsable
             IF @Responsable IS NULL
-                THROW 50000, 'El invitado no tiene un socio responsable asignado (Nro_Socio es NULL en Invitado).', 1;
-
-            PRINT 'DEBUG: Es Invitado. IdInvitado = ' + CAST(@IdInvitadoInt AS VARCHAR(10)) + ', NroSocio responsable = ' + ISNULL(@Responsable, 'NULL') + ', FechaNacimiento = ' + ISNULL(CONVERT(VARCHAR(10), @FechaNacimiento, 120), 'NULL');
+                THROW 50000, 'El invitado no tiene socio responsable.', 1;
         END
 
         IF @FechaNacimiento IS NULL
-            THROW 50010, 'Fecha de nacimiento inválida o no encontrada para el identificador proporcionado.', 1;
+            THROW 50010, 'Fecha de nacimiento invÃ¡lida.', 1;
 
-        SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE()) -
-                     CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) OR
-                                 (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
-                                 THEN 1 ELSE 0 END;
-        PRINT 'DEBUG: Edad calculada = ' + CAST(@Edad AS VARCHAR(3));
+        SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE())
+                     - CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) 
+                          OR (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
+                       THEN 1 ELSE 0 END;
 
-
-        -- 3. Determinar monto base
+        -- Monto base
         IF @NombreActividad = 'Pileta'
         BEGIN
             EXEC ddbbaTP.Asignar_Monto_Pileta
                 @EdadPersona = @Edad,
                 @EsSocio = @EsSocio,
-                @TipoPase = 'Día', -- Asumimos 'Día' por defecto, ajustar si es necesario
+                @TipoPase = 'DÃ­a',
                 @MontoBaseS = @MontoBase OUTPUT;
-            PRINT 'DEBUG: Actividad Pileta. MontoBase = ' + ISNULL(CAST(@MontoBase AS VARCHAR(15)), 'NULL');
         END
         ELSE IF @NombreActividad = 'Sum Recreativo'
-        BEGIN
-            SELECT TOP 1 @MontoBase = Precio
-            FROM ddbbaTP.Sum_Recreativo;
-            PRINT 'DEBUG: Actividad Sum Recreativo. MontoBase = ' + ISNULL(CAST(@MontoBase AS VARCHAR(15)), 'NULL');
-        END
+            SELECT TOP 1 @MontoBase = Precio FROM ddbbaTP.Sum_Recreativo;
         ELSE IF @NombreActividad = 'Colonia'
+            SELECT TOP 1 @MontoBase = Precio FROM ddbbaTP.Colonia;
+        ELSE
+            THROW 50020, 'Nombre de actividad no vÃ¡lido.', 1;
+
+        IF @MontoBase IS NULL
+            THROW 50030, 'Monto base no encontrado.', 1;
+
+        -- Insertar cuota
+        INSERT INTO ddbbaTP.Cuota (Estado, NroSocio, Socio_Cuota)
+        VALUES ('Pendiente', @Responsable, CASE WHEN @EsSocio = 1 THEN @NroPersona ELSE NULL END);
+        SET @IdCuota = SCOPE_IDENTITY();
+
+        -- Factura
+        IF @EsSocio = 0 AND @NombreActividad = 'Pileta'
         BEGIN
-            SELECT TOP 1 @MontoBase = Precio
-            FROM ddbbaTP.Colonia;
-            PRINT 'DEBUG: Actividad Colonia. MontoBase = ' + ISNULL(CAST(@MontoBase AS VARCHAR(15)), 'NULL');
+            INSERT INTO ddbbaTP.Factura ( Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,
+                Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle
+            )
+            VALUES (
+                CONVERT(VARCHAR(10), @FechaEmision, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
+                @MontoBase, 0, 'Pagada', NULL, @IdCuota, @NombreActividad
+            );
+            SET @IdFactura = SCOPE_IDENTITY();
+
+            DECLARE @IdCuenta INT;
+            SELECT @IdCuenta = IdCuenta FROM ddbbaTP.Cuenta WHERE NroSocio = @Responsable;
+
+            IF @IdCuenta IS NULL
+                THROW 50050, 'Cuenta no encontrada.', 1;
+
+            INSERT INTO ddbbaTP.Pago (
+                IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto
+            )
+            VALUES (
+                (SELECT ISNULL(MAX(IdPago), 0) + 1 FROM ddbbaTP.Pago),
+                CONVERT(VARCHAR(10), GETDATE(), 103),
+                @IdCuenta, @IdFactura, @IdMedioPago, @MontoBase
+            );
         END
         ELSE
         BEGIN
-            THROW 50020, 'Nombre de actividad no válido. Debe ser "Pileta", "Sum Recreativo" o "Colonia".', 1;
+            INSERT INTO ddbbaTP.Factura (
+                Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,
+                Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle
+            )
+            VALUES (
+                CONVERT(VARCHAR(10), @FechaEmision, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
+                @MontoBase, 0, 'Pendiente', NULL, @IdCuota, @NombreActividad
+            );
+            SET @IdFactura = SCOPE_IDENTITY();
         END
 
-        IF @MontoBase IS NULL
-            THROW 50030, 'No se pudo determinar el monto base para la actividad especificada.', 1;
-
-        -- 4. Insertar cuota
-        INSERT INTO ddbbaTP.Cuota (Estado, NroSocio, Socio_Cuota)
-        VALUES (
-            'Pendiente',
-            @Responsable, -- El NroSocio de la cuota será el responsable (socio principal o patrocinador)
-            CASE WHEN @EsSocio = 1 THEN @NroPersona ELSE NULL END -- Socio_Cuota es el NroSocio si es socio, NULL si es invitado
-        );
-        SET @IdCuota = SCOPE_IDENTITY();
-        PRINT 'DEBUG: Cuota insertada. IdCuota = ' + CAST(@IdCuota AS VARCHAR(10));
-
-        -- 5. Insertar factura (sin descuentos)
-        INSERT INTO ddbbaTP.Factura (
-            Fecha_Vencimiento,
-            Monto_Total,
-            Dias_Atrasados,
-            Estado,
-            IdDescuento,
-            IdCuota,
-            Detalle
-        )
-        VALUES (
-            @FechaVencimiento,
-            @MontoBase,
-            0,
-            'Pendiente',
-            NULL, -- Sin descuento inicial
-            @IdCuota,
-            @NombreActividad
-        );
-        SET @IdFactura = SCOPE_IDENTITY(); -- Obtener el ID de la factura recién insertada
-        PRINT 'DEBUG: Factura insertada. IdFactura = ' + CAST(@IdFactura AS VARCHAR(10));
-
-        -- 6. Actualizar el campo IdFactura del invitado si la persona es un invitado
         IF @EsSocio = 0
-        BEGIN
-            UPDATE ddbbaTP.Invitado
-            SET IdFactura = @IdFactura
-            WHERE IdInvitado = @IdInvitadoInt; -- Usar la variable INT para el IdInvitado
-            PRINT 'DEBUG: Invitado ' + CAST(@IdInvitadoInt AS VARCHAR(10)) + ' actualizado con IdFactura = ' + CAST(@IdFactura AS VARCHAR(10));
-        END
+            UPDATE ddbbaTP.Invitado SET IdFactura = @IdFactura WHERE IdInvitado = @IdInvitadoInt;
 
         COMMIT TRANSACTION;
-        PRINT 'DEBUG: Transacción completada exitosamente. Cuota y Factura generadas.';
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        DECLARE @Msg NVARCHAR(4000) = ERROR_MESSAGE();
-        PRINT 'ERROR en GenerarCuotaYFacturaActividadExtra: ' + @Msg;
-        THROW; -- Relanzar el error original
+        PRINT 'ERROR: ' + ERROR_MESSAGE();
+        THROW;
     END CATCH
 END;
 GO
@@ -459,7 +446,7 @@ GO
 select * from ddbbaTP.Factura
 go
 
----------- ------------------------------------ ANULAR última FACTURA  de un socio que se dio de baja
+---------- ------------------------------------ ANULAR Ãºltima FACTURA  de un socio que se dio de baja
 CREATE OR ALTER PROCEDURE ddbbaTP.AnularFacturasPorBajaSocio @NroSocio VARCHAR(10)
 AS
 BEGIN
@@ -467,24 +454,24 @@ BEGIN
     BEGIN TRY
         DECLARE @IdFacturaUltima INT;
 
-        -- Encuentra el IdFactura de la última factura generada para el socio dado
+        -- Encuentra el IdFactura de la Ãºltima factura generada para el socio dado
         SELECT TOP 1 @IdFacturaUltima = f.IdFactura
         FROM ddbbaTP.Factura AS f
         INNER JOIN ddbbaTP.Cuota AS c ON f.IdCuota = c.IdCuota
         WHERE c.NroSocio = @NroSocio
-        ORDER BY f.IdFactura DESC; -- Asume que un IdFactura más alto significa que fue generada más recientemente
+        ORDER BY f.IdFactura DESC; -- Asume que un IdFactura mÃ¡s alto significa que fue generada mÃ¡s recientemente
 
-        -- Verifica si se encontró una factura antes de intentar anularla
+        -- Verifica si se encontrÃ³ una factura antes de intentar anularla
         IF @IdFacturaUltima IS NOT NULL
         BEGIN
-            -- Actualiza el estado de la última factura encontrada a 'Anulada'
+            -- Actualiza el estado de la Ãºltima factura encontrada a 'Anulada'
             UPDATE f
             SET f.Estado = 'Anulada'
             FROM ddbbaTP.Factura AS f
             WHERE f.IdFactura = @IdFacturaUltima;
 
-            -- Mensaje de confirmación (solo para fines de desarrollo/depuración)
-            SELECT 'Última factura (' + CAST(@IdFacturaUltima AS VARCHAR(10)) + ') anulada exitosamente para el socio: ' + @NroSocio AS Mensaje;
+            -- Mensaje de confirmaciÃ³n (solo para fines de desarrollo/depuraciÃ³n)
+            SELECT 'Ãšltima factura (' + CAST(@IdFacturaUltima AS VARCHAR(10)) + ') anulada exitosamente para el socio: ' + @NroSocio AS Mensaje;
         END
         ELSE
         BEGIN
@@ -516,7 +503,7 @@ go
 EXECUTE ddbbaTP.AnularFacturasPorBajaSocio @NroSocio='SN-4003'
 go
 
---NOTA: No se actualizan las clases a las que está anotado el socio ni su grupo familiar por el momento
+--NOTA: No se actualizan las clases a las que estÃ¡ anotado el socio ni su grupo familiar por el momento
 
 ------------------ HabilitarPasePileta  ------------------
 
@@ -573,7 +560,7 @@ BEGIN
 
         IF @IdActividadExtra IS NULL
         BEGIN
-            PRINT 'Error: La pileta no está disponible en esa fecha.';
+            PRINT 'Error: La pileta no estÃ¡ disponible en esa fecha.';
             RETURN -3; 
         END;
 
@@ -593,7 +580,7 @@ BEGIN
                     Tarifa_Invitado = @TarifaInvitado 
 
                 WHERE IdPasePileta = @PasePiletaExistente;
-                PRINT 'Se Activó el pase pileta.';
+                PRINT 'Se ActivÃ³ el pase pileta.';
             END
             ELSE
             BEGIN
@@ -609,7 +596,7 @@ BEGIN
                 VALUES (
                     @TarifaSocio, @TarifaInvitado, @NroSocio, @IdInvitado, @IdActividadExtra,   'Activo'
                 );
-                PRINT 'Se insertó el pase correctamente.';
+                PRINT 'Se insertÃ³ el pase correctamente.';
                 SELECT IdPasePileta = SCOPE_IDENTITY();  
             END;
         END TRY
@@ -672,7 +659,7 @@ BEGIN
             IF @NroSocio IS NULL
                 THROW 60004, 'Could not determine the responsible member for this invoice. The invoice is not linked to a guest or directly to a member.', 1;
 
-            -- 4. existe socio¿?
+            -- 4. existe socioÂ¿?
             IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Cuenta WHERE NroSocio = @NroSocio)
                 THROW 60005, 'No account exists for the responsible member with number: ', 1;
 
@@ -773,7 +760,7 @@ GO
 CREATE OR ALTER PROCEDURE ddbbaTP.ModificarFactura
     @IdFactura INT,
     @FechaVencimiento VARCHAR(10) = NULL, -- Nueva fecha de vencimiento (opcional)
-    @DiasAtrasados INT = NULL,            -- Nuevos días de atraso (opcional)
+    @DiasAtrasados INT = NULL,            -- Nuevos dÃ­as de atraso (opcional)
     @Estado VARCHAR(20) = NULL,           -- Nuevo estado de la factura (opcional)
     @IdDescuento INT = NULL,              -- Nuevo IdDescuento (opcional)
     @IdCuota INT = NULL,                  -- Nuevo IdCuota (opcional)
@@ -812,10 +799,10 @@ BEGIN
             THROW 50000, @MensajeError, 1;
         END;
  
-        -- Iniciar transacción para asegurar atomicidad de la actualización
+        -- Iniciar transacciÃ³n para asegurar atomicidad de la actualizaciÃ³n
         BEGIN TRANSACTION;
  
-        -- 3. Realizar la actualización de la factura
+        -- 3. Realizar la actualizaciÃ³n de la factura
         UPDATE ddbbaTP.Factura
         SET
             Fecha_Vencimiento = ISNULL(@FechaVencimiento, Fecha_Vencimiento),
@@ -825,7 +812,7 @@ BEGIN
             IdCuota = ISNULL(@IdCuota, IdCuota),
             Monto_Total = ISNULL(@MontoTotal, Monto_Total),
             Detalle = ISNULL(@Detalle, Detalle),
-            Fecha_Emision = ISNULL(@FechaEmision, Fecha_Emision) -- Se agregó el campo Fecha_Emision
+            Fecha_Emision = ISNULL(@FechaEmision, Fecha_Emision) -- Se agregÃ³ el campo Fecha_Emision
         WHERE
             IdFactura = @IdFactura;
  
@@ -835,10 +822,10 @@ BEGIN
  
     END TRY
     BEGIN CATCH
-        -- En caso de error, revertir la transacción si está activa
+        -- En caso de error, revertir la transacciÃ³n si estÃ¡ activa
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
  
-        -- Capturar y relanzar el error para que la aplicación llamante lo maneje
+        -- Capturar y relanzar el error para que la aplicaciÃ³n llamante lo maneje
         SET @MensajeError = ERROR_MESSAGE();
         RAISERROR(@MensajeError, 16, 1);
     END CATCH
