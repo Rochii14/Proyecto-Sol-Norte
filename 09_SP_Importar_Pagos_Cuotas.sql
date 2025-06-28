@@ -279,10 +279,7 @@ select * from ddbbaTP.Factura
 go
 --------------------------------------------------------------------------------------------------------------------------------
 ---------HACER GENERAR FACTURA ACTIVIDAD EXTRA
-CREATE OR ALTER PROCEDURE ddbbaTP.GenerarCuotaYFacturaActividadExtra
-    @NroPersona VARCHAR(10), 
-    @NombreActividad VARCHAR(50),
-    @IdMedioPago INT NULL
+CREATE OR ALTER PROCEDURE ddbbaTP.GenerarCuotaYFacturaActividadExtra @NroPersona VARCHAR(10),  @NombreActividad VARCHAR(50),@IdMedioPago INT NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -298,28 +295,18 @@ BEGIN
         DECLARE @FechaVencimiento2 DATE = DATEADD(DAY, 10, GETDATE());
         DECLARE @EsSocio BIT, @Existe BIT;
         DECLARE @IdInvitadoInt INT;
-
-        PRINT 'DEBUG: Generar para ' + @NroPersona + ', Actividad = ' + @NombreActividad;
-
-        EXEC ddbbaTP.Validar_TipoPersona
-            @Identificador = @NroPersona,
-            @EsSocio = @EsSocio OUTPUT,
-            @Existe = @Existe OUTPUT;
-
+        DECLARE @IdActividadExtra INT;
+        --PRINT 'DEBUG: Generar para ' + @NroPersona + ', Actividad = ' + @NombreActividad;
+        EXEC ddbbaTP.Validar_TipoPersona   @Identificador = @NroPersona,  @EsSocio = @EsSocio OUTPUT,  @Existe = @Existe OUTPUT;
         IF @Existe = 0
             THROW 50000, 'El identificador no corresponde a un socio ni invitado.', 1;
 
         IF @EsSocio = 1
         BEGIN
-            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),
-                   @IdGrupoFamiliar = IdGrupoFamiliar
-            FROM ddbbaTP.Socio
-            WHERE NroSocio = @NroPersona;
+            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),    @IdGrupoFamiliar = IdGrupoFamiliar
+            FROM ddbbaTP.Socio  WHERE NroSocio = @NroPersona;
 
-            SET @Responsable = ISNULL(
-                (SELECT NroSocio FROM ddbbaTP.GrupoFamiliar WHERE IdGrupoFamiliar = @IdGrupoFamiliar),
-                @NroPersona
-            );
+            SET @Responsable = ISNULL(  (SELECT NroSocio FROM ddbbaTP.GrupoFamiliar WHERE IdGrupoFamiliar = @IdGrupoFamiliar),   @NroPersona );
         END
         ELSE
         BEGIN
@@ -327,9 +314,7 @@ BEGIN
             IF @IdInvitadoInt IS NULL
                 THROW 50000, 'IdInvitado no válido.', 1;
 
-            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),
-                   @Responsable = Nro_Socio
-            FROM ddbbaTP.Invitado
+            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),   @Responsable = Nro_Socio  FROM ddbbaTP.Invitado
             WHERE IdInvitado = @IdInvitadoInt;
 
             IF @Responsable IS NULL
@@ -339,41 +324,48 @@ BEGIN
         IF @FechaNacimiento IS NULL
             THROW 50010, 'Fecha de nacimiento inválida.', 1;
 
-        SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE())
-                     - CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) 
-                          OR (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
+        SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE()) - CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) OR (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
                        THEN 1 ELSE 0 END;
 
-        -- Monto base
+        -- Monto base + ID Actividad Extra
         IF @NombreActividad = 'Pileta'
         BEGIN
-            EXEC ddbbaTP.Asignar_Monto_Pileta
-                @EdadPersona = @Edad,
-                @EsSocio = @EsSocio,
-                @TipoPase = 'Día',
-                @MontoBaseS = @MontoBase OUTPUT;
+			-- Validar temporada de pileta (solo diciembre, enero y febrero)
+			DECLARE @MesActual INT = MONTH(GETDATE());
+			IF @MesActual NOT IN (12, 1, 2)
+				THROW 50025, 'La pileta no está habilitada en esta temporada.', 1;
+            EXEC ddbbaTP.Asignar_Monto_Pileta    @EdadPersona = @Edad,  @EsSocio = @EsSocio,  @TipoPase = 'Día',  @MontoBaseS = @MontoBase OUTPUT;
+
+            SELECT @IdActividadExtra = a.IdActExtra  FROM ddbbaTP.ActividadExtra a
+            INNER JOIN ddbbaTP.Pileta p ON a.IdActExtra = p.IdActividadExtra WHERE a.Tipo = 'Pileta';
         END
         ELSE IF @NombreActividad = 'Sum Recreativo'
+        BEGIN
             SELECT TOP 1 @MontoBase = Precio FROM ddbbaTP.Sum_Recreativo;
+            SELECT @IdActividadExtra = a.IdActExtra FROM ddbbaTP.ActividadExtra a  INNER JOIN ddbbaTP.Sum_Recreativo s ON a.IdActExtra = s.IdActividadExtra
+            WHERE a.Tipo = 'Sum Recreativo';
+        END
         ELSE IF @NombreActividad = 'Colonia'
+        BEGIN
             SELECT TOP 1 @MontoBase = Precio FROM ddbbaTP.Colonia;
+            SELECT @IdActividadExtra = a.IdActExtra  FROM ddbbaTP.ActividadExtra a
+            INNER JOIN ddbbaTP.Colonia c ON a.IdActExtra = c.IdActividadExtra  WHERE a.Tipo = 'Colonia';
+        END
         ELSE
             THROW 50020, 'Nombre de actividad no válido.', 1;
 
-        IF @MontoBase IS NULL
-            THROW 50030, 'Monto base no encontrado.', 1;
+        IF @MontoBase IS NULL OR @IdActividadExtra IS NULL
+            THROW 50030, 'Monto base o actividad extra no encontrado.', 1;
 
         -- Insertar cuota
-        INSERT INTO ddbbaTP.Cuota (Estado, NroSocio, Socio_Cuota)
-        VALUES ('Pendiente', @Responsable, CASE WHEN @EsSocio = 1 THEN @NroPersona ELSE NULL END);
+        INSERT INTO ddbbaTP.Cuota (  Estado, NroSocio, Socio_Cuota, IdActividadExtra  )
+        VALUES (  'Pendiente',  @Responsable,  CASE WHEN @EsSocio = 1 THEN @NroPersona ELSE NULL END,  @IdActividadExtra  );
         SET @IdCuota = SCOPE_IDENTITY();
 
-        -- Factura
+        -- Insertar factura
         IF @EsSocio = 0 AND @NombreActividad = 'Pileta'
         BEGIN
-            INSERT INTO ddbbaTP.Factura ( Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,
-                Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle
-            )
+            INSERT INTO ddbbaTP.Factura ( Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,  Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
             VALUES (
                 CONVERT(VARCHAR(10), @FechaEmision, 120),
                 CONVERT(VARCHAR(10), @FechaVencimiento, 120),
@@ -388,32 +380,24 @@ BEGIN
             IF @IdCuenta IS NULL
                 THROW 50050, 'Cuenta no encontrada.', 1;
 
-            INSERT INTO ddbbaTP.Pago (
-                IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto
-            )
-            VALUES (
-                (SELECT ISNULL(MAX(IdPago), 0) + 1 FROM ddbbaTP.Pago),
-                CONVERT(VARCHAR(10), GETDATE(), 103),
-                @IdCuenta, @IdFactura, @IdMedioPago, @MontoBase
+            INSERT INTO ddbbaTP.Pago (  IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto  )
+            VALUES ( (SELECT ISNULL(MAX(IdPago), 0) + 1 FROM ddbbaTP.Pago),CONVERT(VARCHAR(10), GETDATE(), 103), @IdCuenta, @IdFactura, @IdMedioPago, @MontoBase
             );
         END
         ELSE
         BEGIN
-            INSERT INTO ddbbaTP.Factura (
-                Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,
-                Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle
-            )
-            VALUES (
-                CONVERT(VARCHAR(10), @FechaEmision, 120),
-                CONVERT(VARCHAR(10), @FechaVencimiento, 120),
-                CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
-                @MontoBase, 0, 'Pendiente', NULL, @IdCuota, @NombreActividad
-            );
+            INSERT INTO ddbbaTP.Factura (Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle )
+            VALUES ( CONVERT(VARCHAR(10), @FechaEmision, 120), CONVERT(VARCHAR(10), @FechaVencimiento, 120),  CONVERT(VARCHAR(10), @FechaVencimiento2, 120),   @MontoBase, 0, 'Pendiente', NULL, @IdCuota, @NombreActividad  );
             SET @IdFactura = SCOPE_IDENTITY();
         END
 
-        IF @EsSocio = 0
-            UPDATE ddbbaTP.Invitado SET IdFactura = @IdFactura WHERE IdInvitado = @IdInvitadoInt;
+       IF @NombreActividad = 'Pileta' AND @EsSocio = 0
+		BEGIN
+			DECLARE @FechaTemporada DATE = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0); -- primer día del trimestre actual
+
+			EXEC ddbbaTP.HabilitarPasePileta   @TarifaSocio = 0, @TarifaInvitado = @MontoBase,
+				@NroSocio = @Responsable, @IdInvitado = @IdInvitadoInt, @Fec_Temporada = @FechaTemporada;
+		END;
 
         COMMIT TRANSACTION;
     END TRY
