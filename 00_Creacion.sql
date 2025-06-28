@@ -415,3 +415,11 @@ ADD Socio_Cuota VARCHAR (10);
 go 
 ALTER TABLE ddbbaTP.Invitado
 ADD Fecha_De_Nacimiento VARCHAR(10)
+
+go
+ALTER TABLE ddbbaTP.Factura
+ADD Fecha_Emision VARCHAR(10)
+
+go
+ALTER TABLE ddbbaTP.Factura
+ADD Fecha_Vencimiento2 VARCHAR(10)
