@@ -476,107 +476,92 @@ go
 
 ------------------ HabilitarPasePileta  ------------------
 
-CREATE OR ALTER PROCEDURE ddbbaTP.HabilitarPasePileta
-    @TarifaSocio DECIMAL(10,2),
-    @TarifaInvitado DECIMAL(10,2),
-    @NroSocio VARCHAR(10),
-    @IdInvitado INT = NULL, 
-    @Fec_Temporada DATE 
+CREATE OR ALTER PROCEDURE ddbbaTP.HabilitarPasePileta  @TarifaSocio DECIMAL(10,2),@TarifaInvitado DECIMAL(10,2),@NroSocio VARCHAR(10),@IdInvitado INT = NULL,@Fec_Temporada DATE
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @IdActividadExtra INT; 
-    DECLARE @IsValidEntity BIT = 0; 
-    DECLARE @PasePiletaExistente INT;
 
+    DECLARE @IdActividadExtra INT;
+    DECLARE @PasePiletaExistente INT;
+    DECLARE @FacturaId INT;
+    -- Validar tarifas
     IF @TarifaSocio < 0 OR @TarifaInvitado < 0
     BEGIN
         PRINT 'Error: Tarifa no puede ser negativa.';
-        RETURN -1; 
+        RETURN -1;
     END;
-
+    -- Validar socio e invitado
     IF @IdInvitado IS NOT NULL 
     BEGIN
-        IF EXISTS (SELECT 1 FROM ddbbaTP.Invitado WHERE Nro_Socio = @NroSocio AND IdInvitado = @IdInvitado)
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM ddbbaTP.Invitado 
+            WHERE Nro_Socio = @NroSocio AND IdInvitado = @IdInvitado
+        )
         BEGIN
-            SET @IsValidEntity = 1;
-        END
-        ELSE
-        BEGIN
-            PRINT 'Error: No hay match entre socio e invitado.';
-            RETURN -2; 
+            PRINT 'Error: Socio e invitado no coinciden.';
+            RETURN -2;
         END;
     END
-    ELSE 
+    ELSE IF NOT EXISTS (
+        SELECT 1 
+        FROM ddbbaTP.Socio 
+        WHERE NroSocio = @NroSocio
+    )
     BEGIN
-        
-        IF EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio)
-        BEGIN
-            SET @IsValidEntity = 1;
-        END
-        ELSE
-        BEGIN
-            PRINT 'Error: El socio no existe ne la base de datos.';
-            RETURN -4; 
-        END;
+        PRINT 'Error: Socio no existe.';
+        RETURN -4;
     END;
-
-    IF @IsValidEntity = 1
+    -- Obtener la actividad pileta correspondiente a la temporada
+    SELECT @IdActividadExtra = IdActividadExtra
+    FROM ddbbaTP.Pileta
+    WHERE Fec_Temporada = @Fec_Temporada;
+    IF @IdActividadExtra IS NULL
     BEGIN
-        SELECT @IdActividadExtra = IdActividadExtra
-        FROM ddbbaTP.Pileta
-        WHERE Fec_Temporada = @Fec_Temporada;
-
-        IF @IdActividadExtra IS NULL
-        BEGIN
-            PRINT 'Error: La pileta no está disponible en esa fecha.';
-            RETURN -3; 
-        END;
-
-        BEGIN TRY
-
-            SELECT @PasePiletaExistente = IdPasePileta
-            FROM ddbbaTP.PasePileta
-            WHERE NroSocio = @NroSocio
-              AND (IdInvitado = @IdInvitado OR (IdInvitado IS NULL AND @IdInvitado IS NULL))
-              AND IdPileta = @IdActividadExtra;
-
-            IF @PasePiletaExistente IS NOT NULL
-            BEGIN
-                UPDATE ddbbaTP.PasePileta
-                SET EstadoPase = 'Activo',
-                    Tarifa_Socio = @TarifaSocio,
-                    Tarifa_Invitado = @TarifaInvitado 
-
-                WHERE IdPasePileta = @PasePiletaExistente;
-                PRINT 'Se Activó el pase pileta.';
-            END
-            ELSE
-            BEGIN
-               
-                INSERT INTO ddbbaTP.PasePileta (
-                    Tarifa_Socio,
-                    Tarifa_Invitado,
-                    NroSocio,
-                    IdInvitado,
-                    IdPileta, 
-                    EstadoPase
-                )
-                VALUES (
-                    @TarifaSocio, @TarifaInvitado, @NroSocio, @IdInvitado, @IdActividadExtra,   'Activo'
-                );
-                PRINT 'Se insertó el pase correctamente.';
-                SELECT IdPasePileta = SCOPE_IDENTITY();  
-            END;
-        END TRY
-        BEGIN CATCH
-            PRINT 'Error insewrtando pase pileta: ' + ERROR_MESSAGE();
-            RETURN -99; 
-        END CATCH;
+        PRINT 'Error: No hay pileta para la temporada.';
+        RETURN -3;
+    END;
+    -- Verificar si existe factura pagada correspondiente
+    IF @IdInvitado IS NOT NULL
+		BEGIN
+			SELECT TOP 1 @FacturaId = IdFactura
+			FROM ddbbaTP.Invitado
+			WHERE IdInvitado = @IdInvitado
+			  AND Nro_Socio = @NroSocio;
+		END
+    ELSE
+    BEGIN
+        SELECT TOP 1 @FacturaId = F.IdFactura
+        FROM ddbbaTP.Factura F
+        INNER JOIN ddbbaTP.Cuota C ON F.IdCuota = C.IdCuota
+        WHERE C.NroSocio = @NroSocio
+          AND C.IdActividadExtra = @IdActividadExtra
+          AND F.Estado = 'Pagada';
+    END;
+    IF @FacturaId IS NULL
+		BEGIN
+			PRINT 'Error: No hay factura pagada correspondiente a pileta.';
+			RETURN -5;
+		END;
+    -- Verificar si ya existe un pase
+    SELECT @PasePiletaExistente = IdPasePileta
+    FROM ddbbaTP.PasePileta
+    WHERE NroSocio = @NroSocio AND (IdInvitado = @IdInvitado OR (IdInvitado IS NULL AND @IdInvitado IS NULL))
+      AND IdActividadExtra = @IdActividadExtra AND Fec_Temporada = @Fec_Temporada;
+    IF @PasePiletaExistente IS NOT NULL
+		BEGIN
+			UPDATE ddbbaTP.PasePileta SET Tarifa_Socio = @TarifaSocio,  Tarifa_Invitado = @TarifaInvitado
+			WHERE IdPasePileta = @PasePiletaExistente; 
+			PRINT 'Pase pileta actualizado.';
+		END
+    ELSE
+    BEGIN
+        INSERT INTO ddbbaTP.PasePileta (  Tarifa_Socio,  Tarifa_Invitado,  NroSocio,  IdInvitado,   IdActividadExtra,  Fec_Temporada  )
+        VALUES (  @TarifaSocio, @TarifaInvitado, @NroSocio, @IdInvitado, @IdActividadExtra, @Fec_Temporada );
+        PRINT 'Pase pileta insertado.';
     END;
 END;
-go
-
+GO
 -------------------------------------------------- PAGAR CUOTA/factura
 CREATE OR ALTER PROCEDURE ddbbaTP.PagarFactura @IdFactura INT,@MedioPago INT, @Valor DECIMAL(10,2)
 AS
