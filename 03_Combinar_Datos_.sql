@@ -3,10 +3,10 @@
 *COMISION:5600
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco JazmÌn
+*INTEGRANTES: 45318374 | Di Marco Jazm√≠n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso RocÌo Elizabeth
+			  44588998 | Valdevieso Roc√≠o Elizabeth
 */
 USE Com5600G08
 go
@@ -113,7 +113,7 @@ BEGIN
     -- (aquellos que tienen un registro en la tabla GrupoFamiliar)
     IF NOT EXISTS (SELECT 1 FROM ddbbaTP.GrupoFamiliar)
     BEGIN
-        PRINT 'Advertencia: La tabla GrupoFamiliar est· vacÌa. No hay socios responsables de grupo familiar para asociar invitados.';
+        PRINT 'Advertencia: La tabla GrupoFamiliar est√° vac√≠a. No hay socios responsables de grupo familiar para asociar invitados.';
         RETURN;
     END
 
@@ -130,7 +130,7 @@ BEGIN
         ORDER BY NEWID();
 
         -- Generar una fecha de nacimiento aleatoria entre 1950-01-01 y 2020-12-31
-        DECLARE @DiasRandom INT = ABS(CHECKSUM(NEWID()) % 25836); -- dÌas entre 1950-01-01 y 2020-12-31
+        DECLARE @DiasRandom INT = ABS(CHECKSUM(NEWID()) % 25836); -- d√≠as entre 1950-01-01 y 2020-12-31
         DECLARE @FechaNacimientoDate DATE = DATEADD(DAY, @DiasRandom, '19500101');
         SET @FechaNacimiento = FORMAT(@FechaNacimientoDate, 'dd/MM/yyyy');
 
@@ -188,7 +188,7 @@ BEGIN
     END
     ELSE
     BEGIN
-        RAISERROR('SubTipo inv·lido. Debe ser "Colonia", "Sum" o "Pileta".', 16, 1);
+        RAISERROR('SubTipo inv√°lido. Debe ser "Colonia", "Sum" o "Pileta".', 16, 1);
         RETURN;
     END
 END;
@@ -273,29 +273,29 @@ go
 CREATE OR ALTER PROCEDURE ddbbaTP.Asignar_Monto_Pileta
     @EdadPersona INT,
     @EsSocio BIT,                    -- 1 = socio, 0 = invitado
-    @TipoPase VARCHAR(20) = 'DÌa',   -- 'DÌa', 'Mes' o 'Temporada' (opcional, default = 'DÌa')
+    @TipoPase VARCHAR(20) = 'D√≠a',   -- 'D√≠a', 'Mes' o 'Temporada' (opcional, default = 'D√≠a')
     @MontoBaseS DECIMAL(10,2) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- ValidaciÛn del tipo de pase
-    IF @TipoPase NOT IN ('DÌa', 'Mes', 'Temporada')
+    -- Validaci√≥n del tipo de pase
+    IF @TipoPase NOT IN ('D√≠a', 'Mes', 'Temporada')
     BEGIN
-        THROW 60001, 'Tipo de pase inv·lido. Debe ser DÌa, Mes o Temporada.', 1;
+        THROW 60001, 'Tipo de pase inv√°lido. Debe ser D√≠a, Mes o Temporada.', 1;
     END
 
-    -- Invitados solo pueden acceder a pase del dÌa
-    IF @EsSocio = 0 AND @TipoPase <> 'DÌa'
+    -- Invitados solo pueden acceder a pase del d√≠a
+    IF @EsSocio = 0 AND @TipoPase <> 'D√≠a'
     BEGIN
-        THROW 60002, 'Los invitados solo pueden acceder al pase del dÌa.', 1;
+        THROW 60002, 'Los invitados solo pueden acceder al pase del d√≠a.', 1;
     END
 
-    -- Asignar monto seg˙n edad y tipo de persona
+    -- Asignar monto seg√∫n edad y tipo de persona
     IF @EsSocio = 1
     BEGIN
         -- SOCIOS
-        IF @TipoPase = 'DÌa'
+        IF @TipoPase = 'D√≠a'
             SET @MontoBaseS = CASE WHEN @EdadPersona < 12 THEN 15000 ELSE 25000 END;
         ELSE IF @TipoPase = 'Mes'
             SET @MontoBaseS = CASE WHEN @EdadPersona < 12 THEN 375000 ELSE 625000 END;
@@ -313,31 +313,31 @@ GO
 --VALIDAR TIPO DE PERSONA (SOCIO O INVITADO)
 go
 CREATE OR ALTER PROCEDURE ddbbaTP.Validar_TipoPersona
-    @Identificador VARCHAR(10),         -- Puede ser NroSocio o IdInvitado
-    @EsSocio BIT OUTPUT,                -- 1 si es socio, 0 si es invitado
-    @Existe BIT OUTPUT                  -- 1 si existe en alguna tabla, 0 si no
+    @Identificador VARCHAR(10),
+    @EsSocio BIT OUTPUT,
+    @Existe BIT OUTPUT
 AS
 BEGIN
-    SET NOCOUNT ON;
     SET @EsSocio = NULL;
     SET @Existe = 0;
 
-    IF EXISTS (
-        SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @Identificador
-    )
+    -- Socio: no requiere conversi√≥n
+    IF EXISTS (SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @Identificador)
     BEGIN
         SET @EsSocio = 1;
         SET @Existe = 1;
         RETURN;
     END
 
-    IF EXISTS (
-        SELECT 1 FROM ddbbaTP.Invitado WHERE IdInvitado = @Identificador
-    )
+    -- Invitado: solo si se puede convertir a INT
+    IF TRY_CAST(@Identificador AS INT) IS NOT NULL
     BEGIN
-        SET @EsSocio = 0;
-        SET @Existe = 1;
-        RETURN;
+        IF EXISTS (SELECT 1 FROM ddbbaTP.Invitado WHERE IdInvitado = CAST(@Identificador AS INT))
+        BEGIN
+            SET @EsSocio = 0;
+            SET @Existe = 1;
+            RETURN;
+        END
     END
 END;
 GO
@@ -357,21 +357,21 @@ BEGIN
         UPDATE F
         SET
             F.Monto_Total = F.Monto_Total + F.Monto_Total * 10/100,
-            F.Estado = 'Vencido', -- Cambia el estado a 'Vencido' si a˙n no lo est·
+            F.Estado = 'Vencido', -- Cambia el estado a 'Vencido' si a√∫n no lo est√°
             F.Dias_Atrasados = DATEDIFF(DAY, TRY_CONVERT(DATE, F.Fecha_Vencimiento), @FechaActual)
         FROM
             ddbbaTP.Factura AS F
         WHERE
             TRIM(F.Estado) = 'Pendiente' -- Solo facturas pendientes
-            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) IS NOT NULL -- Asegura que la fecha de vencimiento sea v·lida
-            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) < @FechaActual; -- La fecha de vencimiento ya  pasÛ
+            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) IS NOT NULL -- Asegura que la fecha de vencimiento sea v√°lida
+            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) < @FechaActual; -- La fecha de vencimiento ya  pas√≥
 
         COMMIT TRANSACTION; -- Confirma los cambios.
-        PRINT 'Proceso de ActualizaciÛn de Morosidad completado. Se han actualizado ' + CAST(@@ROWCOUNT AS NVARCHAR(10)) + ' facturas.';
+        PRINT 'Proceso de Actualizaci√≥n de Morosidad completado. Se han actualizado ' + CAST(@@ROWCOUNT AS NVARCHAR(10)) + ' facturas.';
 
     END TRY
     BEGIN CATCH
-        -- Si ocurre un error, revierte la transacciÛn.
+        -- Si ocurre un error, revierte la transacci√≥n.
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
         DECLARE @Msg NVARCHAR(4000) = ERROR_MESSAGE();
         PRINT 'ERROR en Actualizar_Morosidad: ' + @Msg;
