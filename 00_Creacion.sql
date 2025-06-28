@@ -423,3 +423,19 @@ ADD Fecha_Emision VARCHAR(10)
 go
 ALTER TABLE ddbbaTP.Factura
 ADD Fecha_Vencimiento2 VARCHAR(10)
+
+go
+alter table ddbbaTP.Pileta
+drop constraint FK_Pileta_PasePileta
+
+go	
+alter table ddbbaTP.Pileta
+drop column IdPasePileta
+
+go
+ALTER TABLE ddbbaTP.PasePileta
+ADD IdActividadExtra INT, Fec_Temporada DATE
+
+go
+ALTER TABLE ddbbaTP.PasePileta
+ADD CONSTRAINT FK_PasePileta_Pileta FOREIGN KEY (IdActividadExtra, Fec_Temporada) REFERENCES ddbbaTP.Pileta(IdActividadExtra, Fec_Temporada);
