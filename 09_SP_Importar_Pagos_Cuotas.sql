@@ -578,149 +578,99 @@ END;
 go
 
 -------------------------------------------------- PAGAR CUOTA/factura
-CREATE OR ALTER PROCEDURE ddbbaTP.PagarFactura
-    @IdFactura INT,
-    @MedioPago INT,
-    @Valor DECIMAL(10,2)
+CREATE OR ALTER PROCEDURE ddbbaTP.PagarFactura @IdFactura INT,@MedioPago INT, @Valor DECIMAL(10,2)
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         BEGIN TRANSACTION;
-            DECLARE @MontoFactura DECIMAL(10,2), @EstadoFactura VARCHAR(20), @NroSocio VARCHAR(10);
-            DECLARE @FechaVenc DATE, @DiasAtrasados INT, @IdCuota INT;
-            DECLARE @FechaPago DATE;
-            DECLARE @DetalleFactura VARCHAR(50); -- Variable para el detalle de la factura
 
-            SET @FechaPago= GETDATE();
+        DECLARE 
+            @MontoFactura DECIMAL(10,2),
+            @EstadoFactura VARCHAR(20),
+            @NroSocio VARCHAR(10),
+            @FechaVenc DATE,
+            @DiasAtrasados INT,
+            @IdCuota INT,
+            @DetalleFactura VARCHAR(50),
+            @NuevoIdPago BIGINT,
+            @CurrentIdInvitado INT,
+            @CurrentNroSocioAsociadoInvitado VARCHAR(10),
+            @PasePiletaTarifaSocio DECIMAL(10,2) = 0.00,
+            @PasePiletaTarifaInvitado DECIMAL(10,2) = 0.00,
+            @EsFacturaDePileta BIT = 0,
+            @FecTemporadaCalculada DATE;
 
-            SELECT
-                @MontoFactura = Monto_Total,
-                @EstadoFactura = Estado,
-                @FechaVenc = TRY_CAST(Fecha_Vencimiento AS DATE),
-                @IdCuota = IdCuota,
-                @DetalleFactura = Detalle 
-            FROM ddbbaTP.Factura
-            WHERE IdFactura = @IdFactura;
+        -- Obtener datos de la factura
+        SELECT  @MontoFactura = Monto_Total, @EstadoFactura = Estado, @FechaVenc = TRY_CAST(Fecha_Vencimiento AS DATE), @IdCuota = IdCuota,
+            @DetalleFactura = Detalle FROM ddbbaTP.Factura WHERE IdFactura = @IdFactura;
 
-            IF @MontoFactura IS NULL
-                THROW 60001, 'Invoice not found.', 1;
+        IF @MontoFactura IS NULL THROW 60001, 'Factura no encontrada.', 1;
+        IF @FechaVenc IS NULL THROW 60002, 'Fecha de vencimiento inválida.', 1;
+        IF @Valor <> @MontoFactura THROW 60003, 'El monto pagado no coincide con el total facturado.', 1;
 
-            IF @FechaVenc IS NULL
-                THROW 60006, 'Invoice due date is not valid.', 1;
+        -- Determinar socio responsable
+        SELECT @NroSocio = I.Nro_Socio   FROM ddbbaTP.Invitado I  WHERE I.IdFactura = @IdFactura;
 
-            -- 2. 
-            IF @Valor <> @MontoFactura
-                THROW 60003, 'The amount paid does not match the invoice total.', 1;
+        IF @NroSocio IS NULL  SELECT @NroSocio = C.NroSocio  FROM ddbbaTP.Cuota C   WHERE C.IdCuota = @IdCuota;
 
-            -- 3. 
-            SELECT @NroSocio = I.Nro_Socio
-            FROM ddbbaTP.Invitado I
-            WHERE I.IdFactura = @IdFactura;
+        IF @NroSocio IS NULL THROW 60004, 'No se pudo determinar socio responsable.', 1;
 
-            IF @NroSocio IS NULL
-            BEGIN
-                SELECT @NroSocio = C.NroSocio
-                FROM ddbbaTP.Cuota C
-                WHERE C.IdCuota = @IdCuota;
-            END;
+        IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Cuenta WHERE NroSocio = @NroSocio)
+            THROW 60005, 'No existe cuenta para el socio responsable.', 1;
 
-            IF @NroSocio IS NULL
-                THROW 60004, 'Could not determine the responsible member for this invoice. The invoice is not linked to a guest or directly to a member.', 1;
+        -- Insertar pago
+        SELECT @NuevoIdPago = ISNULL(MAX(IdPago), 0) + 1   FROM ddbbaTP.Pago;
 
-            -- 4. existe socio¿?
-            IF NOT EXISTS (SELECT 1 FROM ddbbaTP.Cuenta WHERE NroSocio = @NroSocio)
-                THROW 60005, 'No account exists for the responsible member with number: ', 1;
+        IF EXISTS (SELECT 1 FROM ddbbaTP.Pago WHERE IdPago = @NuevoIdPago)
+            THROW 60006, 'Conflicto con ID de pago generado.', 1;
 
-            -- 5. Insert pago
-            DECLARE @NuevoIdPago BIGINT = (SELECT ISNULL(MAX(IdPago), 0) + 1 FROM ddbbaTP.Pago);
+        INSERT INTO ddbbaTP.Pago (IdPago, Fecha_de_Pago, Monto, IdFactura, IdMedioDePago) VALUES (@NuevoIdPago, CONVERT(VARCHAR(10), GETDATE(), 103), @Valor, @IdFactura, @MedioPago);
 
-            INSERT INTO ddbbaTP.Pago (IdPago, Fecha_de_Pago, Monto, IdFactura, IdMedioDePago)
-            VALUES (@NuevoIdPago, GETDATE(), @Valor, @IdFactura, @MedioPago);
+        -- Actualizar saldo en cuenta
+        UPDATE ddbbaTP.Cuenta   SET Saldo_Favor = ISNULL(Saldo_Favor, 0) + @Valor WHERE NroSocio = @NroSocio;
 
-            -- 6. Update cuenta
-            UPDATE ddbbaTP.Cuenta
-            SET Saldo_Favor = ISNULL(Saldo_Favor, 0) + @Valor
-            WHERE NroSocio = @NroSocio;
+        -- Actualizar estado de factura
+        SET @DiasAtrasados = DATEDIFF(DAY, @FechaVenc, GETDATE());
+        IF @DiasAtrasados < 0 SET @DiasAtrasados = 0;
 
-            -- 7. Update  
-            SET @DiasAtrasados = DATEDIFF(DAY, @FechaVenc, GETDATE());
-            IF @DiasAtrasados < 0 SET @DiasAtrasados = 0;
+        UPDATE ddbbaTP.Factura  SET Estado = 'Pagada',  Dias_Atrasados = @DiasAtrasados  WHERE IdFactura = @IdFactura;
 
-            UPDATE ddbbaTP.Factura
-            SET Estado = 'Pagada',
-                Dias_Atrasados = @DiasAtrasados
-            WHERE IdFactura = @IdFactura;
+		UPDATE ddbbaTP.Cuota SET Estado = 'Pagada' WHERE IdCuota = @IdCuota;
 
-            ------------------ habilitar pase------------------
-            DECLARE @CurrentIdInvitado INT;
-            DECLARE @CurrentNroSocioAsociadoInvitado VARCHAR(10);
-            DECLARE @PasePiletaTarifaSocio DECIMAL(10,2);
-            DECLARE @PasePiletaTarifaInvitado DECIMAL(10,2);
-            DECLARE @EsFacturaDePileta BIT = 0;
-            DECLARE @FecTemporadaCalculada DATE; 
-			 
-            SET @PasePiletaTarifaSocio = 0.00;
-            SET @PasePiletaTarifaInvitado = 0.00;
-			 
-            SELECT @CurrentIdInvitado = I.IdInvitado,
-                   @CurrentNroSocioAsociadoInvitado = I.Nro_Socio
-            FROM ddbbaTP.Invitado I
-            WHERE I.IdFactura = @IdFactura;
-			 
+        -- Verificar si es factura de Pileta
+        IF LTRIM(RTRIM(UPPER(@DetalleFactura))) = 'PILETA'
+        BEGIN
+            SET @EsFacturaDePileta = 1;
+
+            SELECT    @CurrentIdInvitado = I.IdInvitado,    @CurrentNroSocioAsociadoInvitado = I.Nro_Socio
+            FROM ddbbaTP.Invitado I  WHERE I.IdFactura = @IdFactura;
+
+            -- Calcular temporada (ajustar si es necesario)
             SET @FecTemporadaCalculada = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0);
 
-            IF TRIM(@DetalleFactura) = 'Pileta'
+            IF @CurrentIdInvitado IS NOT NULL AND @CurrentNroSocioAsociadoInvitado IS NOT NULL
             BEGIN
-                SET @EsFacturaDePileta = 1;
-				 
-                IF @CurrentIdInvitado IS NOT NULL AND @CurrentNroSocioAsociadoInvitado IS NOT NULL
-                BEGIN
-                    SET @PasePiletaTarifaInvitado = @MontoFactura;
-                END 
-                ELSE IF EXISTS (SELECT 1 FROM ddbbaTP.Cuota C WHERE C.IdCuota = @IdCuota AND C.NroSocio = @NroSocio)
-                BEGIN
-                    SET @PasePiletaTarifaSocio = @MontoFactura; 
-                    SET @CurrentIdInvitado = NULL;
-                    SET @CurrentNroSocioAsociadoInvitado = @NroSocio; -- The member is the "responsible" and "associated person"
-                END
-                  ELSE
-                BEGIN 
-                    PRINT 'WARNING: Pool invoice found but could not link to a specific guest or direct member.';
-                END;
-            END;
-
-            -- Debug messages
-            PRINT 'DEBUG: DetalleFactura = ''' + ISNULL(@DetalleFactura, 'NULL') + '''';
-            PRINT 'DEBUG: EsFacturaDePileta = ' + CAST(@EsFacturaDePileta AS VARCHAR(1));
-            PRINT 'DEBUG: CurrentIdInvitado = ' + ISNULL(CAST(@CurrentIdInvitado AS VARCHAR(10)), 'NULL');
-            PRINT 'DEBUG: CurrentNroSocioAsociadoInvitado = ''' + ISNULL(@CurrentNroSocioAsociadoInvitado, 'NULL') + '''';
-            PRINT 'DEBUG: NroSocio (Responsible Account) = ''' + ISNULL(@NroSocio, 'NULL') + '''';
-            PRINT 'DEBUG: FecTemporadaCalculada = ''' + ISNULL(CONVERT(VARCHAR(10), @FecTemporadaCalculada, 120), 'NULL') + '''';
-            PRINT 'DEBUG: PasePiletaTarifaSocio = ' + CAST(@PasePiletaTarifaSocio AS VARCHAR(20));
-            PRINT 'DEBUG: PasePiletaTarifaInvitado = ' + CAST(@PasePiletaTarifaInvitado AS VARCHAR(20));
-
-
-            IF @EsFacturaDePileta = 1
+                SET @PasePiletaTarifaInvitado = @MontoFactura;
+            END
+            ELSE
             BEGIN
-                -- Execute the procedure to enable/insert the pool pass.
-                EXEC ddbbaTP.HabilitarPasePileta
-                    @TarifaSocio = @PasePiletaTarifaSocio,
-                    @TarifaInvitado = @PasePiletaTarifaInvitado,
-                    @NroSocio = @CurrentNroSocioAsociadoInvitado, -- Will be the sponsor's NroSocio or the member's own
-                    @IdInvitado = @CurrentIdInvitado,              -- Will be IdInvitado if applicable, or NULL for members
-                    @Fec_Temporada = @FecTemporadaCalculada;       -- Pass the variable with the calculated date
+                SET @PasePiletaTarifaSocio = @MontoFactura;
+                SET @CurrentNroSocioAsociadoInvitado = @NroSocio;
+            END
 
-                PRINT 'Pool pass processed after invoice payment.';
-            END;
-
+            -- Habilitar pase de pileta
+            EXEC ddbbaTP.HabilitarPasePileta  @TarifaSocio = @PasePiletaTarifaSocio,  @TarifaInvitado = @PasePiletaTarifaInvitado,
+                @NroSocio = @CurrentNroSocioAsociadoInvitado,  @IdInvitado = @CurrentIdInvitado,   @Fec_Temporada = @FecTemporadaCalculada;
+            PRINT 'Pase pileta habilitado correctamente.';
+        END;
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
         DECLARE @Msg NVARCHAR(4000) = ERROR_MESSAGE();
         RAISERROR(@Msg, 16, 1);
-    END CATCH
+    END CATCH;
 END;
 GO
 
