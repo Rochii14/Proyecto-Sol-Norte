@@ -139,8 +139,7 @@ execute ddbbaTP.ActualizarTablasSegunPagosArchivo
 go
 
 ----------NUEVAS CUOTAS Y FACTURAS
-
-CREATE OR ALTER PROCEDURE ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades
+CREATE OR ALTER PROCEDURE ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades 
     @NroSocio VARCHAR(10),
     @Tipo VARCHAR(20), -- 'Categoria' | 'Actividad'
     @NombreActividad VARCHAR(100)
@@ -150,109 +149,97 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        DECLARE @IdCuota INT, @IdDescuento INT = NULL, @PorcentajeDescuento INT = 0, @MontoFinal DECIMAL(10,2);
-        DECLARE @IdFactura INT, @FechaVencimiento DATE, @MontoBase DECIMAL(10,2);
-        DECLARE @FechaNacimientoSocio VARCHAR(10), @FechaNacimientoSocioDATE DATE, @EdadSocio INT;
-        DECLARE @IdGrupoFamiliarSocio INT, @NroSocioResponsable VARCHAR(10), @CantAct INT;
-        DECLARE @EsSocio BIT = 1; -- En este procedimiento, siempre es un socio.
+        DECLARE 
+            @IdCuota INT,
+            @IdDescuento INT = NULL,
+            @PorcentajeDescuento INT = 0,
+            @MontoFinal DECIMAL(10,2),
+            @IdFactura INT,
+            @FechaEmision DATE,
+            @FechaVencimiento DATE,
+            @FechaVencimiento2 DATE,
+            @MontoBase DECIMAL(10,2),
+            @FechaNacimientoSocio VARCHAR(10),
+            @FechaNacimientoSocioDATE DATE,
+            @EdadSocio INT,
+            @IdGrupoFamiliarSocio INT,
+            @NroSocioResponsable VARCHAR(10),
+            @CantAct INT,
+            @EsSocio BIT = 1;
 
-        -- Obtener el grupo familiar del socio
+        -- 1) Grupo familiar
         SELECT @IdGrupoFamiliarSocio = s.IdGrupoFamiliar
         FROM ddbbaTP.Socio s
         WHERE s.NroSocio = @NroSocio;
 
-        -- Determinar el socio responsable
         IF @IdGrupoFamiliarSocio IS NOT NULL
-        BEGIN
             SELECT @NroSocioResponsable = gf.NroSocio
             FROM ddbbaTP.GrupoFamiliar gf
             WHERE gf.IdGrupoFamiliar = @IdGrupoFamiliarSocio;
-        END
         ELSE
-        BEGIN
             SET @NroSocioResponsable = @NroSocio;
-        END
 
-        -- Insertar cuota
+        -- 2) Insertar cuota
         INSERT INTO ddbbaTP.Cuota (Estado, NroSocio, Socio_Cuota)
         VALUES ('Pendiente', @NroSocioResponsable, @NroSocio);
         SET @IdCuota = SCOPE_IDENTITY();
 
-        -- Obtener y convertir fecha de nacimiento
+        -- 3) Fecha nacimiento y edad
         SELECT @FechaNacimientoSocio = Fecha_De_Nacimiento
-        FROM ddbbaTP.Socio
-        WHERE NroSocio = @NroSocio;
+        FROM ddbbaTP.Socio WHERE NroSocio = @NroSocio;
 
         SET @FechaNacimientoSocioDATE = TRY_CONVERT(DATE, @FechaNacimientoSocio, 103);
         IF @FechaNacimientoSocioDATE IS NULL
-        BEGIN
-            THROW 50000, 'La fecha de nacimiento del socio no es válida o está en un formato incorrecto.', 1;
-        END
+            THROW 50000, 'La fecha de nacimiento del socio es inválida.', 1;
 
-        -- Calcular edad
-        SET @EdadSocio = DATEDIFF(YEAR, @FechaNacimientoSocioDATE, GETDATE()) -
-            CASE WHEN MONTH(@FechaNacimientoSocioDATE) > MONTH(GETDATE()) OR
-                      (MONTH(@FechaNacimientoSocioDATE) = MONTH(GETDATE()) AND DAY(@FechaNacimientoSocioDATE) > DAY(GETDATE()))
-                      THEN 1
-                      ELSE 0
-            END;
+        SET @EdadSocio = DATEDIFF(YEAR, @FechaNacimientoSocioDATE, GETDATE())
+                         - CASE WHEN MONTH(@FechaNacimientoSocioDATE) > MONTH(GETDATE())
+                              OR (MONTH(@FechaNacimientoSocioDATE) = MONTH(GETDATE()) AND DAY(@FechaNacimientoSocioDATE) > DAY(GETDATE()))
+                              THEN 1 ELSE 0 END;
 
-        -- Determinar el monto según tipo
+        -- 4) Monto base y descuentos
         IF @Tipo = 'Categoria'
         BEGIN
             EXEC ddbbaTP.Asignar_Monto_Categoria @EdadS = @EdadSocio, @MontoBaseS = @MontoBase OUTPUT;
 
             IF @IdGrupoFamiliarSocio IS NOT NULL
-            BEGIN
                 SET @PorcentajeDescuento = 15;
-            END
         END
         ELSE IF @Tipo = 'Actividad'
         BEGIN
-            -- Si @NombreActividad es NULL o vacío, intentar obtener la última actividad inscrita
             IF @NombreActividad IS NULL OR @NombreActividad = ''
-            BEGIN
                 SELECT TOP 1 @NombreActividad = a.Nombre
                 FROM ddbbaTP.Inscripto i
                 JOIN ddbbaTP.Actividad a ON i.IdActividad = a.IdActividad
                 WHERE i.NroSocio = @NroSocio
                   AND TRY_CONVERT(DATE, i.FechaInscripcion, 103) IS NOT NULL
-                ORDER BY TRY_CONVERT(DATE, i.FechaInscripcion, 103) DESC, i.IdActividad DESC;
-            END
+                ORDER BY TRY_CONVERT(DATE, i.FechaInscripcion, 103) DESC;
 
             IF @NombreActividad IS NULL OR @NombreActividad = ''
-            BEGIN
-                THROW 50001, 'El socio no tiene inscripciones válidas con fecha correcta (d/m/yyyy) o no se especificó una actividad.', 1;
-            END
+                THROW 50001, 'No se especificó actividad válida.', 1;
 
-            -- Para actividades, usar el procedimiento Asignar_Monto_Actividad
             EXEC ddbbaTP.Asignar_Monto_Actividad @NombreAct = @NombreActividad, @MontoBaseS = @MontoBase OUTPUT;
 
-            -- Verificar si tiene más de una actividad para descuento
-            SELECT @CantAct = COUNT(*) FROM ddbbaTP.Inscripto
-            WHERE NroSocio = @NroSocio;
+            SELECT @CantAct = COUNT(*) FROM ddbbaTP.Inscripto WHERE NroSocio = @NroSocio;
             IF @CantAct > 1
-            BEGIN
                 SET @PorcentajeDescuento = 10;
-            END
         END
         ELSE
-        BEGIN
-            THROW 50000, 'Tipo de cuota no válido. Debe ser "Categoria" o "Actividad".', 1;
-        END
+            THROW 50000, 'Tipo inválido.', 1;
 
-        -- Calcular monto final
         SET @MontoFinal = ISNULL(@MontoBase, 0) - (ISNULL(@MontoBase, 0) * @PorcentajeDescuento / 100.0);
 
-        -- Fecha de vencimiento
-        SET @FechaVencimiento = CAST(DATEADD(DAY, 5, GETDATE()) AS DATE); --le asigno una fecha al primer vencimiento
+        -- 5) Fechas
+        SET @FechaEmision = GETDATE();
+        SET @FechaVencimiento = DATEADD(DAY, 5, @FechaEmision);
+        SET @FechaVencimiento2 = DATEADD(DAY, 5, @FechaVencimiento);
 
-        -- Buscar o generar el descuento correspondiente
+        -- 6) Descuento
         IF @PorcentajeDescuento > 0
         BEGIN
-            SELECT @IdDescuento = d.IdDescuento
-            FROM ddbbaTP.Descuento d
-            WHERE d.Porcentaje = @PorcentajeDescuento AND d.NroSocio = @NroSocio;
+            SELECT @IdDescuento = IdDescuento
+            FROM ddbbaTP.Descuento
+            WHERE Porcentaje = @PorcentajeDescuento AND NroSocio = @NroSocio;
 
             IF @IdDescuento IS NULL
             BEGIN
@@ -263,28 +250,26 @@ BEGIN
             END
         END
 
-        -- Insertar factura
-        INSERT INTO ddbbaTP.Factura (Fecha_Vencimiento, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
-        VALUES (
-            @FechaVencimiento,
-            @MontoFinal,
-            0,
-            'Pendiente',
-            @IdDescuento,
-            @IdCuota,
-            @NombreActividad
-        );
+        -- 7) Insertar factura con fecha de emisión y ambos vencimientos
+        INSERT INTO ddbbaTP.Factura 
+            (Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
+        VALUES 
+            (
+                CONVERT(VARCHAR(10), @FechaEmision, 120),      -- yyyy-MM-dd
+                CONVERT(VARCHAR(10), @FechaVencimiento, 120),  -- yyyy-MM-dd
+                CONVERT(VARCHAR(10), @FechaVencimiento2, 120), -- yyyy-MM-dd
+                @MontoFinal, 0, 'Pendiente', @IdDescuento, @IdCuota, @NombreActividad
+            );
 
         COMMIT TRANSACTION;
+
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
         THROW;
     END CATCH
 END;
 GO
-
 ---------->comprobación de que se inserta y modifica la factura
 select * from ddbbaTP.Factura
 go
