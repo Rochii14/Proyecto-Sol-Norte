@@ -395,3 +395,19 @@ SET NroSocio2 = NULL
 WHERE 
     TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103) IS NOT NULL AND
     DATEDIFF(YEAR, TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103), GETDATE()) >= 18;
+go
+ALTER TABLE ddbbaTP.Factura
+ALTER COLUMN Detalle VARCHAR(200) NULL;
+
+go
+UPDATE ddbbaTP.Factura
+SET Fecha_Vencimiento = CONVERT(VARCHAR(10), TRY_CONVERT(DATE, Fecha_Vencimiento, 103), 120)
+WHERE Fecha_Vencimiento IS NOT NULL;
+
+go
+ALTER TABLE ddbbaTP.Factura
+ALTER COLUMN Fecha_Vencimiento DATE;
+
+go
+ALTER TABLE ddbbaTP.Cuota
+ADD Socio_Cuota VARCHAR (10);
