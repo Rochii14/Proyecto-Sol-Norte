@@ -411,3 +411,7 @@ ALTER COLUMN Fecha_Vencimiento DATE;
 go
 ALTER TABLE ddbbaTP.Cuota
 ADD Socio_Cuota VARCHAR (10);
+
+go 
+ALTER TABLE ddbbaTP.Invitado
+ADD Fecha_De_Nacimiento VARCHAR(10)
