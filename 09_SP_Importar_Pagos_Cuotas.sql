@@ -11,8 +11,7 @@
 USE Com5600G08
 go
 ----------importo los datos que están en archivo de los pagos
-CREATE OR ALTER PROCEDURE Facturacion.Importar_Pagos 
-    @rutaArchivo VARCHAR(200)
+CREATE OR ALTER PROCEDURE Facturacion.Importar_Pagos  @rutaArchivo VARCHAR(200)
 AS
 BEGIN
     -- Borra si ya existe la tabla temporal global
@@ -41,82 +40,96 @@ BEGIN
         );';
 
     EXEC sp_executesql @SQL_Pago;
-
-    --SELECT * FROM ##Carga_Pago_Temp;
 END;
 go
 
 CREATE OR ALTER PROCEDURE Facturacion.ActualizarTablasSegunPagosArchivo
 AS
 BEGIN
+    SET NOCOUNT ON;
+   
     DECLARE 
-        @IdCuota INT,
-        @IdFactura INT,
-        @IdCuenta INT,
-        @IdMedioPago INT,
-        @colId BIGINT,
-        @colFecha VARCHAR(30),
-        @colResp VARCHAR(10),
-        @colValor DECIMAL(10,2),
-        @colMedioPago VARCHAR(30);
-
-	
+        @IdCuota INT,@IdFactura INT,@IdCuenta INT, @IdMedioPago INT,
+        @colId BIGINT,@colFecha VARCHAR(30),@colResp VARCHAR(10),
+        @colValor DECIMAL(10,2),@colMedioPago VARCHAR(30),@FechaConvertida DATE;
+    -- Cursor para recorrer pagos únicos
     DECLARE pagos_cursor CURSOR FOR
-        SELECT colId, colFecha, colResp, colValor, colMedioPago
-        FROM ##Carga_Pago_Temp;
+    SELECT DISTINCT colId, colFecha, colResp, colValor, colMedioPago
+    FROM ##Carga_Pago_Temp;
 
     OPEN pagos_cursor;
 
     FETCH NEXT FROM pagos_cursor 
     INTO @colId, @colFecha, @colResp, @colValor, @colMedioPago;
 
-
     WHILE @@FETCH_STATUS = 0
     BEGIN
         BEGIN TRY
             BEGIN TRANSACTION;
 
-            -- 1. Insertar cuota
-            INSERT INTO Facturacion.Cuota (Estado, NroSocio)
-            VALUES ('Pendiente', @colResp);
+            -- Convertir fecha
+            SET @FechaConvertida = COALESCE(TRY_CAST(@colFecha AS DATE), GETDATE());
 
-            SET @IdCuota = SCOPE_IDENTITY();
-
-            -- 2. Insertar factura
-            INSERT INTO Facturacion.Factura (Fecha_Vencimiento, Dias_Atrasados, Estado, IdDescuento, IdCuota)
-			VALUES (@FechaConvertida, 0, 'Pagada', NULL, @IdCuota);
-
-            SET @IdFactura = SCOPE_IDENTITY();
-
-            -- 3. Buscar o crear medio de pago
-            SELECT @IdMedioPago = IdMedioPago
-            FROM Facturacion.MedioDePago
-            WHERE Nombre = @colMedioPago;
-
-            IF @IdMedioPago IS NULL
+            -- Validar existencia del socio
+            IF EXISTS (SELECT 1 FROM Socios.Socio WHERE NroSocio = @colResp)
             BEGIN
-                INSERT INTO Facturacion.MedioDePago (Nombre, Tipo, Modalidad)
-                VALUES (@colMedioPago, 'Desconocido', 'Importado');
+                -- 1. Insertar cuota
+                INSERT INTO Facturacion.Cuota (Estado, NroSocio)
+                VALUES ('Pendiente', @colResp);
 
-                SET @IdMedioPago = SCOPE_IDENTITY();
+                SET @IdCuota = SCOPE_IDENTITY();
+
+                -- 2. Insertar factura
+                INSERT INTO Facturacion.Factura (Fecha_Vencimiento, Dias_Atrasados, Estado, IdDescuento, IdCuota)
+                VALUES (@FechaConvertida, 0, 'Pagada', NULL, @IdCuota);
+
+                SET @IdFactura = SCOPE_IDENTITY();
+
+                -- 3. Buscar o crear medio de pago
+                SELECT @IdMedioPago = IdMedioPago
+                FROM Facturacion.MedioDePago
+                WHERE Nombre = @colMedioPago;
+
+                IF @IdMedioPago IS NULL
+                BEGIN
+                    INSERT INTO Facturacion.MedioDePago (Nombre, Tipo, Modalidad)
+                    VALUES (@colMedioPago, 'Desconocido', 'Importado');
+
+                    SET @IdMedioPago = SCOPE_IDENTITY();
+                END
+
+                -- 4. Buscar o crear cuenta
+                SELECT @IdCuenta = IdCuenta
+                FROM Socios.Cuenta
+                WHERE NroSocio = @colResp;
+
+                IF @IdCuenta IS NULL
+                BEGIN
+                    INSERT INTO Socios.Cuenta (Saldo_Favor, NroSocio)
+                    VALUES (0, @colResp);
+
+                    SET @IdCuenta = SCOPE_IDENTITY();
+                END
+
+                -- 5. Insertar pago si no existe
+                IF NOT EXISTS (
+                    SELECT 1 FROM Facturacion.Pago WHERE IdPago = @colId
+                )
+                BEGIN
+                    INSERT INTO Facturacion.Pago (IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto)
+                    VALUES (@colId, @FechaConvertida, @IdCuenta, @IdFactura, @IdMedioPago, @colValor);
+
+                    PRINT 'Pago insertado: IdPago=' + CAST(@colId AS VARCHAR);
+                END
+                ELSE
+                BEGIN
+                    PRINT 'Pago duplicado detectado. No insertado: IdPago=' + CAST(@colId AS VARCHAR);
+                END
             END
-
-            -- 4. Buscar o crear cuenta
-            SELECT @IdCuenta = IdCuenta
-            FROM Socios.Cuenta
-            WHERE NroSocio = @colResp;
-
-            IF @IdCuenta IS NULL
+            ELSE
             BEGIN
-                INSERT INTO Socios.Cuenta (Saldo_Favor, NroSocio)
-                VALUES (0, @colResp);
-
-                SET @IdCuenta = SCOPE_IDENTITY();
+                PRINT 'NroSocio no existe. Pago omitido: IdPago=' + CAST(@colId AS VARCHAR);
             END
-
-            -- 5. Insertar pago usando colId como IdPago
-            INSERT INTO Facturacion.Pago (IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto)
-			VALUES (@colId, @FechaConvertida, @IdCuenta, @IdFactura, @IdMedioPago, @colValor);
 
             COMMIT TRANSACTION;
         END TRY
@@ -131,9 +144,10 @@ BEGIN
 
     CLOSE pagos_cursor;
     DEALLOCATE pagos_cursor;
-END;
-go
 
+END;
+GO
+GO
 execute Facturacion.Importar_Pagos 'C:\_temp\Pago cuotas.csv'
 go
 
