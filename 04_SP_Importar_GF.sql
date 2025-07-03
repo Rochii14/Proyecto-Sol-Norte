@@ -11,7 +11,11 @@
 USE Com5600G08
 go
 
+<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Socios.Importar_Grupo_Familiar
+=======
+CREATE OR ALTER PROCEDURE ddbbaTP.Importar_Grupo_Familiar
+>>>>>>> recuperar-historial
 	@RutaArchivo VARCHAR(200)
 AS
 BEGIN
@@ -44,10 +48,17 @@ BEGIN
 	(
 		SELECT *
 		FROM #GrupoFamiliarTemporal AS gft
+<<<<<<< HEAD
 		WHERE NOT EXISTS ( SELECT 1 FROM Socios.GrupoFamiliar AS gf WHERE gf.NroSocio = gft.NroSocio_RP )
 	)
 
 	INSERT INTO Socios.GrupoFamiliar(NroSocio)
+=======
+		WHERE NOT EXISTS ( SELECT 1 FROM ddbbaTP.GrupoFamiliar AS gf WHERE gf.NroSocio = gft.NroSocio_RP )
+	)
+
+	INSERT INTO ddbbaTP.GrupoFamiliar(NroSocio)
+>>>>>>> recuperar-historial
 	SELECT NroSocio_RP
 	FROM (
 			SELECT NroSocio_RP, --Funcionaba también con un SELECT DISTINCT NroSocio_RP
@@ -60,12 +71,21 @@ BEGIN
 	(
 		SELECT *
 		FROM #GrupoFamiliarTemporal AS gft
+<<<<<<< HEAD
 		WHERE NOT EXISTS ( SELECT 1 FROM Socios.Socio AS s WHERE s.NroSocio = gft.NroSocio )
 				AND NOT EXISTS ( SELECT 1 FROM Socios.Socio AS s WHERE s.Dni = gft.Dni )
 					AND TRY_CONVERT(DATE, gft.Fecha_Nac, 103) IS NOT NULL
 	)
 
 	INSERT INTO Socios.Socio( NroSocio, 
+=======
+		WHERE NOT EXISTS ( SELECT 1 FROM ddbbaTP.Socio AS s WHERE s.NroSocio = gft.NroSocio )
+				AND NOT EXISTS ( SELECT 1 FROM ddbbaTP.Socio AS s WHERE s.Dni = gft.Dni )
+					AND TRY_CONVERT(DATE, gft.Fecha_Nac, 103) IS NOT NULL
+	)
+
+	INSERT INTO ddbbaTP.Socio( NroSocio, 
+>>>>>>> recuperar-historial
 							   Dni, 
 							   Nombre, 
 							   Apellido, 
@@ -95,12 +115,18 @@ BEGIN
 
 	FROM FiltrarDatos
 
+<<<<<<< HEAD
 	EXEC Socios.Insertar_Id_GruporFamiliar;
 	EXEC Socios.Insertar_Datos_Cuenta;
+=======
+	EXEC ddbbaTP.Insertar_Id_GruporFamiliar;
+	EXEC ddbbaTP.Insertar_Datos_Cuenta;
+>>>>>>> recuperar-historial
 	
 	DROP TABLE #GrupoFamiliarTemporal;
 END;
 go
+<<<<<<< HEAD
 
 EXEC Socios.Importar_Grupo_Familiar 'C:\_temp\Grupo Familiar.csv'
 go
@@ -113,5 +139,15 @@ go
 
 SELECT * FROM Socios.Cuenta
 go
+=======
+EXEC ddbbaTP.Importar_Grupo_Familiar 'C:\_temp\Grupo Familiar.csv'
+go
+
+SELECT * FROM ddbbaTP.GrupoFamiliar
+
+SELECT * FROM ddbbaTP.Socio
+
+SELECT * FROM ddbbaTP.Cuenta
+>>>>>>> recuperar-historial
 
 

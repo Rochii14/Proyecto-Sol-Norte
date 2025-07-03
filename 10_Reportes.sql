@@ -21,6 +21,7 @@ El segundo vencimiento son hasta 5 días corridos luego del primer vencimiento y 
 
 /*    @NroSocio VARCHAR(10),   @Tipo VARCHAR(20), -- 'Categoria' | 'Actividad' @NombreActividad VARCHAR(100)*/
 
+<<<<<<< HEAD
 execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
 go
 execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Natación'
@@ -28,6 +29,15 @@ go
 execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Vóley'
 go
 execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
+=======
+execute ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
+go
+execute ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Natación'
+go
+execute ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Vóley'
+go
+execute ddbbaTP.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
+>>>>>>> recuperar-historial
 go
 
 --@IdFactura INT,@FechaVencimiento VARCHAR(10) = NULL, @DiasAtrasados INT = NULL,            
@@ -35,6 +45,7 @@ go
 --@FecheEmision varchar(10)
 
 
+<<<<<<< HEAD
 EXECUTE Facturacion.ModificarFactura @IdFactura= 2863 , @FechaVencimiento= '2025-01-24',@DiasAtrasados = null,
 @Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2887, @MontoTotal= null, @FechaEmision = '2025-01-19'
 go
@@ -58,6 +69,31 @@ go
 SELECT * FROM Facturacion.Factura
 go
 CREATE OR ALTER PROCEDURE Facturacion.Reporte_1
+=======
+EXECUTE ddbbaTP.ModificarFactura @IdFactura= 2863 , @FechaVencimiento= '2025-01-24',@DiasAtrasados = null,
+@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2887, @MontoTotal= null, @FechaEmision = '2025-01-19'
+go
+
+EXECUTE ddbbaTP.ModificarFactura @IdFactura= 2862, @FechaVencimiento= '2025-02-24',@DiasAtrasados = null,
+@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2886, @MontoTotal= null, @FechaEmision = '2025-02-19'
+go
+
+EXECUTE ddbbaTP.ModificarFactura @IdFactura= 2860, @FechaVencimiento= '2025-03-24',@DiasAtrasados = null,
+@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2884, @MontoTotal= null, @FechaEmision = '2025-03-19'
+go
+
+EXECUTE ddbbaTP.ModificarFactura @IdFactura= 2885, @FechaVencimiento= '2024-12-24',@DiasAtrasados = null,
+@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=null, @MontoTotal= null, @FechaEmision = '2024-12-19'
+go
+
+SELECT * FROM ddbbaTP.Factura
+go
+EXECUTE ddbbaTP.Actualizar_Morosidad
+go
+SELECT * FROM ddbbaTP.Factura
+go
+CREATE OR ALTER PROCEDURE ddbbaTP.Reporte_1
+>>>>>>> recuperar-historial
     @FechaInicio DATE, -- Fecha de inicio del rango para considerar la morosidad
     @FechaFin DATE     -- Fecha de fin del rango para considerar la morosidad
 AS
@@ -82,11 +118,19 @@ BEGIN
             CAST(YEAR(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(4)) + '-' +
             RIGHT('0' + CAST(MONTH(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(2)), 2) AS MesIncumplidoAnio
         FROM
+<<<<<<< HEAD
             Facturacion.Factura AS F
         INNER JOIN
             Facturacion.Cuota AS C ON F.IdCuota = C.IdCuota
         INNER JOIN
             Socios.Socio AS S ON C.NroSocio = S.NroSocio
+=======
+            ddbbaTP.Factura AS F
+        INNER JOIN
+            ddbbaTP.Cuota AS C ON F.IdCuota = C.IdCuota
+        INNER JOIN
+            ddbbaTP.Socio AS S ON C.NroSocio = S.NroSocio
+>>>>>>> recuperar-historial
         WHERE
             -- Condiciones para que una factura se considere 'morosa'
             (F.Estado = 'Vencido' OR F.Dias_Atrasados > 0)
@@ -143,7 +187,11 @@ BEGIN
 END;
 go
 
+<<<<<<< HEAD
 EXECUTE Facturacion.Reporte_1
+=======
+EXECUTE ddbbaTP.Reporte_1
+>>>>>>> recuperar-historial
     @FechaInicio = '2024-11-01', 
     @FechaFin ='2025-06-01'
 go
@@ -152,7 +200,11 @@ go
 /*REPORTE 2:
 Reporte acumulado mensual de ingresos por actividad deportiva al momento en que se saca el reporte tomando como inicio enero.*/
 
+<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Facturacion.Reporte2
+=======
+CREATE OR ALTER PROCEDURE ddbbaTP.Reporte2
+>>>>>>> recuperar-historial
 AS
 BEGIN
     -- Fecha actual y fecha de inicio fija
@@ -164,8 +216,13 @@ BEGIN
         a.Nombre AS Actividad,
         COUNT(*) AS CantidadInscriptos,
         SUM(a.Costo) AS IngresosTotales
+<<<<<<< HEAD
     FROM Clases.Inscripto i
     INNER JOIN Clases.Actividad a ON a.IdActividad = i.IdActividad
+=======
+    FROM ddbbaTP.Inscripto i
+    INNER JOIN ddbbaTP.Actividad a ON a.IdActividad = i.IdActividad
+>>>>>>> recuperar-historial
     WHERE TRY_CAST(i.FechaInscripcion AS DATE) >= @fechaInicio
       AND TRY_CAST(i.FechaInscripcion AS DATE) <= @fechaActual
     GROUP BY a.Nombre
@@ -174,6 +231,7 @@ END;
 go
 
 --Acualizaciones porque solo hay registros anteriores a 2025
+<<<<<<< HEAD
 UPDATE Clases.Inscripto set FechaInscripcion= '2025-03-12' where NroSocio='SN-4035' and IdActividad=6
 go
 UPDATE Clases.Inscripto set FechaInscripcion= '2025-02-12' where NroSocio='SN-4002' and IdActividad=6
@@ -188,6 +246,22 @@ UPDATE Clases.Inscripto set FechaInscripcion= '2025-03-12' where NroSocio='SN-40
 go
 
 EXECUTE Facturacion.Reporte2
+=======
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-03-12' where NroSocio='SN-4035' and IdActividad=6
+go
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-02-12' where NroSocio='SN-4002' and IdActividad=6
+go
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-01-12' where NroSocio='SN-4003' and IdActividad=5
+go
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-01-12' where NroSocio='SN-4004' and IdActividad=5
+go
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-03-12' where NroSocio='SN-4045' and IdActividad=6
+go
+UPDATE ddbbaTP.Inscripto set FechaInscripcion= '2025-03-12' where NroSocio='SN-4037' and IdActividad=6
+go
+
+EXECUTE ddbbaTP.Reporte2
+>>>>>>> recuperar-historial
 go
 
 ------------------------------------------------------------------------------------------------------------------------------
@@ -195,7 +269,11 @@ go
 Reporte de la cantidad de socios que han realizado alguna actividad de forma alternada (inasistencias) por categoría de socios y actividad, 
 ordenado según cantidad de inasistencias ordenadas de mayor a menor.*/
 
+<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Clases.Reporte_3 
+=======
+CREATE OR ALTER PROCEDURE ddbbaTP.Reporte_3 
+>>>>>>> recuperar-historial
 AS
 BEGIN
 	WITH Socios_Anotados_Sin_Asistencia AS (
@@ -204,6 +282,7 @@ BEGIN
 			cat.Nombre,
 			c.IdActividad,
 			a.Nombre AS NombreActividad
+<<<<<<< HEAD
 		FROM Clases.Anotado_En ae
 		JOIN Socios.Socio s ON s.NroSocio = ae.NroSocio
 		JOIN Socios.Categoria AS cat ON cat.IdCategoria = s.IdCategoria
@@ -212,6 +291,16 @@ BEGIN
 		WHERE NOT EXISTS (
 							SELECT 1 
 							FROM Clases.Asiste asi
+=======
+		FROM ddbbaTP.Anotado_En ae
+		JOIN ddbbaTP.Socio s ON s.NroSocio = ae.NroSocio
+		JOIN ddbbaTP.Categoria AS cat ON cat.IdCategoria = s.IdCategoria
+		JOIN ddbbaTP.Clase c ON c.IdClase = ae.IdClase
+		JOIN ddbbaTP.Actividad a ON a.IdActividad = c.IdActividad
+		WHERE NOT EXISTS (
+							SELECT 1 
+							FROM ddbbaTP.Asiste asi
+>>>>>>> recuperar-historial
 							WHERE asi.NroSocio = ae.NroSocio AND asi.IdClase = ae.IdClase
 						 )
 	)
@@ -224,14 +313,22 @@ BEGIN
 END;
 go
 
+<<<<<<< HEAD
 EXECUTE Clases.Reporte_3
+=======
+EXECUTE ddbbaTP.Reporte_3
+>>>>>>> recuperar-historial
 go
 
 ---------------------------------------------------------------------------------------------------------------------------------
 /*Reporte 4 Reporte que contenga a los socios que no han asistido a alguna clase de la actividad que realizan. El reporte 
 debe contener: Nombre, Apellido, edad, categoría y la actividad*/
 
+<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Clases.Reporte_4
+=======
+CREATE OR ALTER PROCEDURE ddbbaTP.Reporte_4
+>>>>>>> recuperar-historial
 AS
 BEGIN
 	SELECT 
@@ -242,6 +339,7 @@ BEGIN
 		c.Nombre AS Categoria,
 		a.Nombre AS Actividad
 	FROM 
+<<<<<<< HEAD
 		Socios.Socio s
 	JOIN 
 		Clases.Inscripto i ON s.NroSocio = i.NroSocio
@@ -253,6 +351,19 @@ BEGIN
 		Clases.Clase cl ON cl.IdActividad = a.IdActividad
 	LEFT JOIN 
 		Clases.Asiste asi ON asi.IdClase = cl.IdClase AND asi.NroSocio = s.NroSocio
+=======
+		ddbbaTP.Socio s
+	JOIN 
+		ddbbaTP.Inscripto i ON s.NroSocio = i.NroSocio
+	JOIN 
+		ddbbaTP.Actividad a ON i.IdActividad = a.IdActividad
+	JOIN 
+		ddbbaTP.Categoria c ON s.IdCategoria = c.IdCategoria
+	JOIN 
+		ddbbaTP.Clase cl ON cl.IdActividad = a.IdActividad
+	LEFT JOIN 
+		ddbbaTP.Asiste asi ON asi.IdClase = cl.IdClase AND asi.NroSocio = s.NroSocio
+>>>>>>> recuperar-historial
 	WHERE 
 		asi.NroSocio IS NULL
 	GROUP BY 
@@ -260,7 +371,11 @@ BEGIN
 END;
 go
 
+<<<<<<< HEAD
 EXEC Clases.Reporte_4
+=======
+EXEC ddbbaTP.Reporte_4
+>>>>>>> recuperar-historial
 go
 
  

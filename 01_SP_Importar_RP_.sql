@@ -8,10 +8,16 @@
 			  42905305 | Mendez Samuel Omar
 			  44588998 | Valdevieso Rocío Elizabeth
 */
+<<<<<<< HEAD
 USE Com5600G08
 go
 
 CREATE OR ALTER PROCEDURE Socios.Importar_Responsables_De_Pago
+=======
+use Com5600G08
+go
+CREATE OR ALTER PROCEDURE ddbbaTP.Importar_Responsables_De_Pago
+>>>>>>> recuperar-historial
 	@RutaArchivo VARCHAR (200)
 AS
 BEGIN
@@ -44,12 +50,21 @@ BEGIN
 	(
 		SELECT * 
 		FROM #SocioTemporal AS st
+<<<<<<< HEAD
 		WHERE NOT EXISTS ( SELECT 1  FROM Socios.Socio AS s WHERE st.NroSocio = s.NroSocio )
 				AND NOT EXISTS ( SELECT 1 FROM Socios.Socio AS s WHERE st.Dni = s.Dni )
 					AND TRY_CONVERT(DATE, st.Fecha_Nac, 103) IS NOT NULL
 	)
 
 	INSERT INTO Socios.Socio ( NroSocio, Nombre, Apellido, Dni, Email_Personal, Fecha_De_Nacimiento, Telefono_Contacto, Telef_C_Emergencia, Nombre_Obra_Social, Nro_Obra_Social, Telefono_Emergencia_2 )
+=======
+		WHERE NOT EXISTS ( SELECT 1  FROM ddbbaTP.Socio AS s WHERE st.NroSocio = s.NroSocio )
+				AND NOT EXISTS ( SELECT 1 FROM ddbbaTP.Socio AS s WHERE st.Dni = s.Dni )
+					AND TRY_CONVERT(DATE, st.Fecha_Nac, 103) IS NOT NULL
+	)
+
+	INSERT INTO ddbbaTP.Socio ( NroSocio, Nombre, Apellido, Dni, Email_Personal, Fecha_De_Nacimiento, Telefono_Contacto, Telef_C_Emergencia, Nombre_Obra_Social, Nro_Obra_Social, Telefono_Emergencia_2 )
+>>>>>>> recuperar-historial
 	SELECT * 
 	FROM FiltrarDatos
 
@@ -59,10 +74,17 @@ BEGIN
 END;
 go
 
+<<<<<<< HEAD
 EXEC Socios.Importar_Responsables_De_Pago 'C:\_temp\Responsables de pago.csv'
 go
 
 SELECT * FROM Socios.Socio
 go
+=======
+EXEC ddbbaTP.Importar_Responsables_De_Pago 'C:\_temp\Responsables de pago.csv'
+go
+
+SELECT * FROM ddbbaTP.Socio
+>>>>>>> recuperar-historial
 
 
