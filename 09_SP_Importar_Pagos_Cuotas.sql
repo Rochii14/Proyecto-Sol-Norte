@@ -3,14 +3,14 @@
 *COMISION:5600
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco Jazmín
+*INTEGRANTES: 45318374 | Di Marco JazmÃ­n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso Rocío Elizabeth
+			  44588998 | Valdevieso RocÃ­o Elizabeth
 */
 USE Com5600G08
 go
-----------importo los datos que están en archivo de los pagos
+----------importo los datos que estÃ¡n en archivo de los pagos
 CREATE OR ALTER PROCEDURE Facturacion.Importar_Pagos 
     @rutaArchivo VARCHAR(200)
 AS
@@ -192,7 +192,7 @@ BEGIN
 
         SET @FechaNacimientoSocioDATE = TRY_CONVERT(DATE, @FechaNacimientoSocio, 103);
         IF @FechaNacimientoSocioDATE IS NULL
-            THROW 50000, 'La fecha de nacimiento del socio es inválida.', 1;
+            THROW 50000, 'La fecha de nacimiento del socio es invÃ¡lida.', 1;
 
         SET @EdadSocio = DATEDIFF(YEAR, @FechaNacimientoSocioDATE, GETDATE())
                          - CASE WHEN MONTH(@FechaNacimientoSocioDATE) > MONTH(GETDATE())
@@ -218,7 +218,7 @@ BEGIN
                 ORDER BY TRY_CONVERT(DATE, i.FechaInscripcion, 103) DESC;
 
             IF @NombreActividad IS NULL OR @NombreActividad = ''
-                THROW 50001, 'No se especificó actividad válida.', 1;
+                THROW 50001, 'No se especificÃ³ actividad vÃ¡lida.', 1;
 
             EXEC Clases.Asignar_Monto_Actividad @NombreAct = @NombreActividad, @MontoBaseS = @MontoBase OUTPUT;
 
@@ -227,7 +227,7 @@ BEGIN
                 SET @PorcentajeDescuento = 10;
         END
         ELSE
-            THROW 50000, 'Tipo inválido.', 1;
+            THROW 50000, 'Tipo invÃ¡lido.', 1;
 
         SET @MontoFinal = ISNULL(@MontoBase, 0) - (ISNULL(@MontoBase, 0) * @PorcentajeDescuento / 100.0);
 
@@ -252,7 +252,7 @@ BEGIN
             END
         END
 
-        -- 7) Insertar factura con fecha de emisión y ambos vencimientos
+        -- 7) Insertar factura con fecha de emisiÃ³n y ambos vencimientos
         INSERT INTO Facturacion.Factura 
             (Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
         VALUES 
@@ -272,7 +272,7 @@ BEGIN
     END CATCH
 END;
 GO
----------->comprobación de que se inserta y modifica la factura
+---------->comprobaciÃ³n de que se inserta y modifica la factura
 select * from Facturacion.Factura
 go
 execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio ='SN-4139', @Tipo ='Actividad' , @NombreActividad='Futsal'
@@ -314,7 +314,7 @@ BEGIN
         BEGIN
             SET @IdInvitadoInt = TRY_CAST(@NroPersona AS INT);
             IF @IdInvitadoInt IS NULL
-                THROW 50000, 'IdInvitado no válido.', 1;
+                THROW 50000, 'IdInvitado no vÃ¡lido.', 1;
 
             SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),   @Responsable = Nro_Socio  FROM Accesos.Invitado
             WHERE IdInvitado = @IdInvitadoInt;
@@ -324,7 +324,7 @@ BEGIN
         END
 
         IF @FechaNacimiento IS NULL
-            THROW 50010, 'Fecha de nacimiento inválida.', 1;
+            THROW 50010, 'Fecha de nacimiento invÃ¡lida.', 1;
 
         SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE()) - CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) OR (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
                        THEN 1 ELSE 0 END;
@@ -335,8 +335,8 @@ BEGIN
 			-- Validar temporada de pileta (solo diciembre, enero y febrero)
 			DECLARE @MesActual INT = MONTH(GETDATE());
 			IF @MesActual NOT IN (12, 1, 2)
-				THROW 50025, 'La pileta no está habilitada en esta temporada.', 1;
-            EXEC Accesos.Asignar_Monto_Pileta    @EdadPersona = @Edad,  @EsSocio = @EsSocio,  @TipoPase = 'Día',  @MontoBaseS = @MontoBase OUTPUT;
+				THROW 50025, 'La pileta no estÃ¡ habilitada en esta temporada.', 1;
+            EXEC Accesos.Asignar_Monto_Pileta    @EdadPersona = @Edad,  @EsSocio = @EsSocio,  @TipoPase = 'DÃ­a',  @MontoBaseS = @MontoBase OUTPUT;
 
             SELECT @IdActividadExtra = a.IdActExtra  FROM Accesos.ActividadExtra a
             INNER JOIN Accesos.Pileta p ON a.IdActExtra = p.IdActividadExtra WHERE a.Tipo = 'Pileta';
@@ -354,7 +354,7 @@ BEGIN
             INNER JOIN Accesos.Colonia c ON a.IdActExtra = c.IdActividadExtra  WHERE a.Tipo = 'Colonia';
         END
         ELSE
-            THROW 50020, 'Nombre de actividad no válido.', 1;
+            THROW 50020, 'Nombre de actividad no vÃ¡lido.', 1;
 
         IF @MontoBase IS NULL OR @IdActividadExtra IS NULL
             THROW 50030, 'Monto base o actividad extra no encontrado.', 1;
@@ -395,7 +395,7 @@ BEGIN
 
        IF @NombreActividad = 'Pileta' AND @EsSocio = 0
 		BEGIN
-			DECLARE @FechaTemporada DATE = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0); -- primer día del trimestre actual
+			DECLARE @FechaTemporada DATE = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0); -- primer dÃ­a del trimestre actual
 
 			EXEC Facturacion.HabilitarPasePileta   @TarifaSocio = 0, @TarifaInvitado = @MontoBase,
 				@NroSocio = @Responsable, @IdInvitado = @IdInvitadoInt, @Fec_Temporada = @FechaTemporada;
@@ -418,7 +418,7 @@ execute Facturacion.GenerarCuotaYFacturaActividadExtra     @NroPersona = '5' ,  
 GO
 select * from Facturacion.Factura
 go
----------- ------------------------------------ ANULAR última FACTURA  de un socio que se dio de baja
+---------- ------------------------------------ ANULAR Ãºltima FACTURA  de un socio que se dio de baja
 CREATE OR ALTER PROCEDURE Facturacion.AnularFacturasPorBajaSocio @NroSocio VARCHAR(10)
 AS
 BEGIN
@@ -426,24 +426,24 @@ BEGIN
     BEGIN TRY
         DECLARE @IdFacturaUltima INT;
 
-        -- Encuentra el IdFactura de la última factura generada para el socio dado
+        -- Encuentra el IdFactura de la Ãºltima factura generada para el socio dado
         SELECT TOP 1 @IdFacturaUltima = f.IdFactura
         FROM Facturacion.Factura AS f
         INNER JOIN Facturacion.Cuota AS c ON f.IdCuota = c.IdCuota
         WHERE c.NroSocio = @NroSocio
-        ORDER BY f.IdFactura DESC; -- Asume que un IdFactura más alto significa que fue generada más recientemente
+        ORDER BY f.IdFactura DESC; -- Asume que un IdFactura mÃ¡s alto significa que fue generada mÃ¡s recientemente
 
-        -- Verifica si se encontró una factura antes de intentar anularla
+        -- Verifica si se encontrÃ³ una factura antes de intentar anularla
         IF @IdFacturaUltima IS NOT NULL
         BEGIN
-            -- Actualiza el estado de la última factura encontrada a 'Anulada'
+            -- Actualiza el estado de la Ãºltima factura encontrada a 'Anulada'
             UPDATE f
             SET f.Estado = 'Anulada'
             FROM Facturacion.Factura AS f
             WHERE f.IdFactura = @IdFacturaUltima;
 
-            -- Mensaje de confirmación (solo para fines de desarrollo/depuración)
-            SELECT 'Última factura (' + CAST(@IdFacturaUltima AS VARCHAR(10)) + ') anulada exitosamente para el socio: ' + @NroSocio AS Mensaje;
+            -- Mensaje de confirmaciÃ³n (solo para fines de desarrollo/depuraciÃ³n)
+            SELECT 'Ãšltima factura (' + CAST(@IdFacturaUltima AS VARCHAR(10)) + ') anulada exitosamente para el socio: ' + @NroSocio AS Mensaje;
         END
         ELSE
         BEGIN
@@ -463,19 +463,19 @@ BEGIN
 END;
 go
 
-CREATE OR ALTER PROCEDURE Dar_Baja_Socio @NroSocio VARCHAR(10)
+CREATE OR ALTER PROCEDURE Socios.Dar_Baja_Socio @NroSocio VARCHAR(10)
 AS
 BEGIN
 	UPDATE Socios.Socio SET Estado= 'Inactivo' where NroSocio= @NroSocio
 	PRINT 'Socio ' + @NroSocio + ' dado de baja'
 END;
 go
-EXECUTE Dar_Baja_Socio @NroSocio= 'SN-4003'
+EXECUTE Socios.Dar_Baja_Socio @NroSocio= 'SN-4003'
 go
 EXECUTE Facturacion.AnularFacturasPorBajaSocio @NroSocio='SN-4003'
 go
 
---NOTA: No se actualizan las clases a las que está anotado el socio ni su grupo familiar por el momento
+--NOTA: No se actualizan las clases a las que estÃ¡ anotado el socio ni su grupo familiar por el momento
 -------------------------------------------------- PAGAR CUOTA/factura
 CREATE OR ALTER PROCEDURE Facturacion.PagarFactura @IdFactura INT,@MedioPago INT, @Valor DECIMAL(10,2)
 AS
@@ -505,7 +505,7 @@ BEGIN
             @DetalleFactura = Detalle FROM Facturacion.Factura WHERE IdFactura = @IdFactura;
 
         IF @MontoFactura IS NULL THROW 60001, 'Factura no encontrada.', 1;
-        IF @FechaVenc IS NULL THROW 60002, 'Fecha de vencimiento inválida.', 1;
+        IF @FechaVenc IS NULL THROW 60002, 'Fecha de vencimiento invÃ¡lida.', 1;
         IF @Valor <> @MontoFactura THROW 60003, 'El monto pagado no coincide con el total facturado.', 1;
 
         -- Determinar socio responsable
@@ -577,7 +577,7 @@ GO
 CREATE OR ALTER PROCEDURE Facturacion.ModificarFactura
     @IdFactura INT,
     @FechaVencimiento VARCHAR(10) = NULL, -- Nueva fecha de vencimiento (opcional)
-    @DiasAtrasados INT = NULL,            -- Nuevos días de atraso (opcional)
+    @DiasAtrasados INT = NULL,            -- Nuevos dÃ­as de atraso (opcional)
     @Estado VARCHAR(20) = NULL,           -- Nuevo estado de la factura (opcional)
     @IdDescuento INT = NULL,              -- Nuevo IdDescuento (opcional)
     @IdCuota INT = NULL,                  -- Nuevo IdCuota (opcional)
@@ -616,10 +616,10 @@ BEGIN
             THROW 50000, @MensajeError, 1;
         END;
  
-        -- Iniciar transacción para asegurar atomicidad de la actualización
+        -- Iniciar transacciÃ³n para asegurar atomicidad de la actualizaciÃ³n
         BEGIN TRANSACTION;
  
-        -- 3. Realizar la actualización de la factura
+        -- 3. Realizar la actualizaciÃ³n de la factura
         UPDATE Facturacion.Factura
         SET
             Fecha_Vencimiento = ISNULL(@FechaVencimiento, Fecha_Vencimiento),
@@ -629,7 +629,7 @@ BEGIN
             IdCuota = ISNULL(@IdCuota, IdCuota),
             Monto_Total = ISNULL(@MontoTotal, Monto_Total),
             Detalle = ISNULL(@Detalle, Detalle),
-            Fecha_Emision = ISNULL(@FechaEmision, Fecha_Emision) -- Se agregó el campo Fecha_Emision
+            Fecha_Emision = ISNULL(@FechaEmision, Fecha_Emision) -- Se agregÃ³ el campo Fecha_Emision
         WHERE
             IdFactura = @IdFactura;
  
@@ -639,13 +639,13 @@ BEGIN
  
     END TRY
     BEGIN CATCH
-        -- En caso de error, revertir la transacción si está activa
+        -- En caso de error, revertir la transacciÃ³n si estÃ¡ activa
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
  
-        -- Capturar y relanzar el error para que la aplicación llamante lo maneje
+        -- Capturar y relanzar el error para que la aplicaciÃ³n llamante lo maneje
         SET @MensajeError = ERROR_MESSAGE();
         RAISERROR(@MensajeError, 16, 1);
-    END CATCH
+    ENDÂ CATCH
 END;
 go
 
