@@ -3,10 +3,10 @@
 *COMISION:5600
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco Jazm韓
+*INTEGRANTES: 45318374 | Di Marco Jazm铆n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso Roc韔 Elizabeth
+			  44588998 | Valdevieso Roc铆o Elizabeth
 */
 USE Com5600G08
 go
@@ -62,7 +62,7 @@ END;
 go
 
 <<<<<<< HEAD
-EXEC Accesos.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensi髇 .csv UTF-8
+EXEC Accesos.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensi贸n .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
@@ -76,7 +76,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Tabla temporal para l韓eas crudas ya algunas columnas tiene distintos formatos 
+    -- Tabla temporal para l铆neas crudas ya algunas columnas tiene distintos formatos 
     CREATE TABLE #ArchivoCrudo (
         Linea NVARCHAR(MAX)
     );
@@ -98,16 +98,16 @@ BEGIN
     );
 
     
-    INSERT INTO #DiasLluvia (Fecha)-- Insertar solo l韓eas con datos, parsear fecha
+    INSERT INTO #DiasLluvia (Fecha)-- Insertar solo l铆neas con datos, parsear fecha
     SELECT DISTINCT
         TRY_CAST(LEFT(Linea, 10) AS DATE) AS Fecha
     FROM #ArchivoCrudo
-    WHERE Linea LIKE '2024-%'
+    WHERE Linea LIKE '2025-%'
       AND LTRIM(RTRIM(Linea)) <> ''
       AND TRY_CAST(LEFT(Linea, 10) AS DATE) IS NOT NULL;
 
     
-    SELECT * FROM #DiasLluvia;-- Mostrar para validaci髇
+    SELECT * FROM #DiasLluvia;-- Mostrar para validaci贸n
 
     -- Insertar en tabla final, evitando duplicados
     INSERT INTO Accesos.Dia_LLuvia (Fecha)
@@ -119,18 +119,18 @@ BEGIN
         WHERE f.Fecha = dne.Fecha
     );
    
-    SELECT COUNT(*) AS TotalDiasInsertados FROM Accesos.Dia_LLuvia; -- Confirmar d韆s
+    SELECT COUNT(*) AS TotalDiasInsertados FROM Accesos.Dia_LLuvia; -- Confirmar d铆as
 END;
 go
 
-EXEC Accesos.Importar_Clima2 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensi髇 .csv UTF-8
+EXEC Accesos.Importar_Clima2 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensi贸n .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
 =======
-EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensi髇 .csv UTF-8
+EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensi贸n .csv UTF-8
 go
-EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo con extensi髇 .csv UTF-8
+EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo con extensi贸n .csv UTF-8
 go
 
 select * from ddbbaTP.Dia_LLuvia
