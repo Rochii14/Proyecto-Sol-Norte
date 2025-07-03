@@ -3,14 +3,14 @@
 *COMISION:5600
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco Jazmín
+*INTEGRANTES: 45318374 | Di Marco JazmÃ­n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso Rocío Elizabeth
+			  44588998 | Valdevieso RocÃ­o Elizabeth
 */
 
 
------------------------------------------ CREACIÓN DE ROLES Y ASIGNACIÓN DE PERMISOS --------------------------------------------
+----------------------------------------- CREACIÃ“N DE ROLES Y ASIGNACIÃ“N DE PERMISOS --------------------------------------------
 USE Com5600G08
 go
 
@@ -55,9 +55,9 @@ go
 
 GRANT SELECT ON SCHEMA::Facturacion TO Administrativo_De_Morosidad;
 
-REVOKE SELECT ON Facturacion.MedioDePago FROM Administrativo_De_Morosidad;
-REVOKE SELECT ON Facturacion.Pago		 FROM Administrativo_De_Morosidad;
-REVOKE SELECT ON Facturacion.Reembolso	 FROM Administrativo_De_Morosidad;
+DENY SELECT ON Facturacion.MedioDePago TO Administrativo_De_Morosidad;
+DENY SELECT ON Facturacion.Pago	TO Administrativo_De_Morosidad;
+DENY SELECT ON Facturacion.Reembolso TO Administrativo_De_Morosidad;
 
 
 --AREA TESORERIA: Administrativo de facturacion.
@@ -84,15 +84,15 @@ go
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::Socios TO Administrativo_Socio;
 
-REVOKE SELECT, INSERT, UPDATE, DELETE ON Socios.Categoria FROM Administrativo_Socio;
+DENY SELECT, INSERT, UPDATE, DELETE ON Socios.Categoria TO Administrativo_Socio;
 
 
-GRANT SELECT ON Accesos.ActividadExtra						  TO Administrativo_Socio;
+GRANT SELECT ON Accesos.ActividadExtra				  TO Administrativo_Socio;
 GRANT SELECT, INSERT, UPDATE, DELETE ON Accesos.Realiza		  TO Administrativo_Socio;
 GRANT SELECT, INSERT, UPDATE, DELETE ON Accesos.Invitado	  TO Administrativo_Socio;
 GRANT SELECT, INSERT, UPDATE, DELETE ON Clases.Inscripto	  TO Administrativo_Socio;
 GRANT SELECT, INSERT, UPDATE, DELETE ON Clases.Anotado_En	  TO Administrativo_Socio;
-GRANT SELECT ON Clases.Actividad							  TO Administrativo_Socio;
+GRANT SELECT ON Clases.Actividad				  TO Administrativo_Socio;
 
 
 --AREA SOCIOS: Socio_Web.
@@ -104,7 +104,7 @@ END;
 go
 
 GRANT SELECT ON SCHEMA::Clases		 TO Socio_Web;
-GRANT SELECT ON SCHEMA::Facturacion  TO Socio_Web;
+GRANT SELECT ON SCHEMA::Facturacion   	 TO Socio_Web;
 GRANT SELECT ON SCHEMA::Accesos		 TO Socio_Web;
 
 GRANT SELECT ON Socios.Socio								  TO Socio_Web;
@@ -141,8 +141,7 @@ GRANT SELECT ON SCHEMA::Socios      TO Vicepresidente;
 GRANT SELECT ON SCHEMA::Clases      TO Vicepresidente;
 GRANT SELECT ON SCHEMA::Accesos     TO Vicepresidente;
 
-REVOKE SELECT ON Socios.Cuenta FROM Vicepresidente;
-
+DENY SELECT ON Socios.Cuenta TO Vicepresidente;
 
 --AREA AUTORIDADES: Secretario.
 
@@ -155,7 +154,7 @@ go
 GRANT SELECT ON SCHEMA::Clases TO Secretario;
 
 GRANT SELECT ON SCHEMA::Socios TO Secretario;
-REVOKE SELECT ON Socios.Cuenta FROM Secretario; 
+DENY SELECT ON Socios.Cuenta TO Secretario;
 
 
 GRANT SELECT ON Accesos.Invitado		TO Secretario;
@@ -181,7 +180,7 @@ GRANT SELECT ON Accesos.ActividadExtra  TO Vocal;
 GRANT SELECT ON Accesos.PasePileta      TO Vocal;
 
 
------------------------------------------ ASIGNACIÓN DE ROLES A USUARIOS --------------------------------------------
+----------------------------------------- ASIGNACIÃ“N DE ROLES A USUARIOS --------------------------------------------
 
 ALTER ROLE Jefe_De_Tesoreria ADD MEMBER Usuario_JefeTesoreria;		
 go
