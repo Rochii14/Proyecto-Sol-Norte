@@ -1,32 +1,32 @@
-/*Entrega 4- Documento de instalaciÛn y configuraciÛn
-Luego de decidirse por un motor de base de datos relacional, llegÛ el momento de generar la base de datos. En esta oportunidad utilizar·n
-SQL Server. Deber· instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle las configuraciones aplicadas 
-(ubicaciÛn de archivos, memoria asignada, seguridad, puertos, etc.) en un documento como el que le entregarÌa al DBA. Cree la base de datos, 
-entidades y relaciones. Incluya restricciones y claves. Deber· entregar un archivo .sql con el scriptcompleto de creaciÛn (debe funcionar 
-si se lo ejecuta ìtal cualî es entregado en una sola ejecuciÛn). Incluya comentarios para indicar quÈ hace cada mÛdulo de cÛdigo.  Genere 
-store procedures para manejar la inserciÛn, modificado, borrado (si corresponde, tambiÈn debe decidir si determinadas entidades solo admitir·n
-borrado lÛgico) de cada tabla. Los nombres de los store procedures NO deben comenzar con ìSPî.  Algunas operaciones implicar·n store procedures 
-que involucran varias tablas, uso de transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs. Aseg˙rense de que 
-los comentarios que acompaÒen al cÛdigo lo expliquen. Genere esquemas para organizar de forma lÛgica los componentes del sistema y aplique esto 
-en la creaciÛn de objetos. NO use el esquema ìdboî.  Todos los SP creados deben estar acompaÒados de juegos de prueba. Se espera que realicen 
-validaciones b·sicas en los SP (p/e cantidad mayor a cero, CUIT v·lido, etc.) y que en los juegos de prueba demuestren la correcta aplicaciÛn 
+/*Entrega 4- Documento de instalaci√≥n y configuraci√≥n
+Luego de decidirse por un motor de base de datos relacional, lleg√≥ el momento de generar la base de datos. En esta oportunidad utilizar√°n
+SQL Server. Deber√° instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle las configuraciones aplicadas 
+(ubicaci√≥n de archivos, memoria asignada, seguridad, puertos, etc.) en un documento como el que le entregar√≠a al DBA. Cree la base de datos, 
+entidades y relaciones. Incluya restricciones y claves. Deber√° entregar un archivo .sql con el scriptcompleto de creaci√≥n (debe funcionar 
+si se lo ejecuta ‚Äútal cual‚Äù es entregado en una sola ejecuci√≥n). Incluya comentarios para indicar qu√© hace cada m√≥dulo de c√≥digo.  Genere 
+store procedures para manejar la inserci√≥n, modificado, borrado (si corresponde, tambi√©n debe decidir si determinadas entidades solo admitir√°n
+borrado l√≥gico) de cada tabla. Los nombres de los store procedures NO deben comenzar con ‚ÄúSP‚Äù.  Algunas operaciones implicar√°n store procedures 
+que involucran varias tablas, uso de transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs. Aseg√∫rense de que 
+los comentarios que acompa√±en al c√≥digo lo expliquen. Genere esquemas para organizar de forma l√≥gica los componentes del sistema y aplique esto 
+en la creaci√≥n de objetos. NO use el esquema ‚Äúdbo‚Äù.  Todos los SP creados deben estar acompa√±ados de juegos de prueba. Se espera que realicen 
+validaciones b√°sicas en los SP (p/e cantidad mayor a cero, CUIT v√°lido, etc.) y que en los juegos de prueba demuestren la correcta aplicaci√≥n 
 de las validaciones. Las pruebas deben realizarse en un script separado, donde con comentarios se indique en cada caso el resultado esperado
-El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha de entrega, n˙mero de grupo, nombre de la materia, 
-nombres y DNI de los alumnos.  Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante la secciÛn de pr·cticas de 
+El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha de entrega, n√∫mero de grupo, nombre de la materia, 
+nombres y DNI de los alumnos.  Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante la secci√≥n de pr√°cticas de 
 MIEL. Solo uno de los miembros del grupo debe hacer la entrega. 
 
 *FECHA DE ENTREGA: 23/05/2025
 *NUMERO DE GRUPO: 08
 *NOMBRE DE LA MATERIA: Base de Datos Aplicadas
-*INTEGRANTES: 45318374 | Di Marco JazmÌn
+*INTEGRANTES: 45318374 | Di Marco Jazm√≠n
 			  46346548 | Medina Federico Gabriel
 			  42905305 | Mendez Samuel Omar
-			  44588998 | Valdevieso RocÌo Elizabeth
+			  44588998 | Valdevieso Roc√≠o Elizabeth
 */
 
--------------------------------------CREACI”N DE OBJETOS-------------------------------
+-------------------------------------CREACI√ìN DE OBJETOS-------------------------------
 
------------CREACI”N DE LA BASE DE DATOS
+-----------CREACI√ìN DE LA BASE DE DATOS
 
 USE master
 go
@@ -41,7 +41,7 @@ go
 USE Com5600G08
 go
 
------------CREACI”N DE LOS SCHEMAS
+-----------CREACI√ìN DE LOS SCHEMAS
 
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Socios')
 BEGIN
@@ -67,7 +67,7 @@ BEGIN
 END;
 go
 
------------CREACI”N DE TABLAS
+-----------CREACI√ìN DE TABLAS
 
 -- Tabla SOCIO
 
@@ -75,7 +75,7 @@ IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Soc
 BEGIN
 	CREATE TABLE Socios.Socio (
 		NroSocio VARCHAR(10) PRIMARY KEY,
-		Dni INT CHECK (Dni BETWEEN 10000000 AND 999999999), --CHEQUEO QUE EL DNI SEA V¡LIDO
+		Dni INT CHECK (Dni BETWEEN 10000000 AND 999999999), --CHEQUEO QUE EL DNI SEA V√ÅLIDO
 		Nombre VARCHAR(50),
 		Apellido VARCHAR(50),
 		Email_Personal VARCHAR(100),
@@ -87,7 +87,7 @@ BEGIN
 		IdGrupoFamiliar INT,
 		IdCategoria INT,
 		Estado VARCHAR(10) DEFAULT 'Activo',
-		NroSocio2 VARCHAR(10), --RELACI”N UNARIA
+		NroSocio2 VARCHAR(10), --RELACI√ìN UNARIA
 		---LAS AGREGO A LO ULTIMO PARA QUE NO TUVIERA CONFLICTO REFERENCIAL
 		--CONSTRAINT FK_Socio_GrupoFamiliar FOREIGN KEY (IdGrupoFamiliar) REFERENCES GrupoFamiliar(Id),
 		--CONSTRAINT FK_Socio_Categoria FOREIGN KEY (IdCategoria) REFERENCES Categoria(Id),
@@ -279,7 +279,7 @@ BEGIN
 END;   --13
 go
 
--- Tabla INVITADO (entidad dÈbil)
+-- Tabla INVITADO (entidad d√©bil)
 
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Accesos' AND TABLE_NAME = 'Invitado')
 BEGIN
@@ -311,7 +311,7 @@ BEGIN
 END;   --15
 go
 
--- Tabla ACTIVIDAD EXTRA (jerarquÌa)
+-- Tabla ACTIVIDAD EXTRA (jerarqu√≠a)
 
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Accesos' AND TABLE_NAME = 'ActividadExtra')
 BEGIN
@@ -330,7 +330,7 @@ BEGIN
 		IdActividadExtra INT PRIMARY KEY,
 		FechaFin VARCHAR(10),
 		FechaInicio VARCHAR(10),
-		Precio DECIMAL(10,2) CHECK (Precio >= 0), --VALIDACI”N DE costo positivo
+		Precio DECIMAL(10,2) CHECK (Precio >= 0), --VALIDACI√ìN DE costo positivo
 		CONSTRAINT FK_Colonia_ActividadExtra FOREIGN KEY (IdActividadExtra) REFERENCES Accesos.ActividadExtra(IdActExtra)
 	);
 END;   --17
@@ -425,7 +425,7 @@ go
 
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Accesos' AND TABLE_NAME = 'Dia_Lluvia')
 BEGIN
-	CREATE TABLE Accesos.Dia_LLuvia( --relaciÛn 1:1 con reembolso
+	CREATE TABLE Accesos.Dia_LLuvia( --relaci√≥n 1:1 con reembolso
 			Fecha DATE,
 			CONSTRAINT PK_dia_lluvia PRIMARY KEY (fecha),
 	);
@@ -466,7 +466,7 @@ END;
 go
 
 
-----CAMBIOS REALIZADOS DESPU…S DE LA CREACI”N DE LAS TABLAS
+----CAMBIOS REALIZADOS DESPU√âS DE LA CREACI√ìN DE LAS TABLAS
 
 
 IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Accesos' AND TABLE_NAME = 'TarifaPileta')
@@ -474,16 +474,16 @@ BEGIN
 	CREATE TABLE Accesos.TarifaPileta (
 		IdTarifa INT IDENTITY(1,1),
 
-		TipoTarifa VARCHAR(50) NOT NULL,  -- Ej: 'DÌa', 'Mes', 'Temporada'
-		TipoPersona VARCHAR(50) NOT NULL, -- Ej: 'Adulto', 'Menor de 12 aÒos'
+		TipoTarifa VARCHAR(50) NOT NULL,  -- Ej: 'D√≠a', 'Mes', 'Temporada'
+		TipoPersona VARCHAR(50) NOT NULL, -- Ej: 'Adulto', 'Menor de 12 a√±os'
 
 		MontoSocio DECIMAL(12,2) NOT NULL CHECK (MontoSocio >= 0),
 		MontoInvitado DECIMAL(12,2) NULL CHECK (MontoInvitado >= 0), -- puede ser NULL si no aplica
 
-		VigenteHasta DATE NOT NULL CHECK (VigenteHasta >= '2025-01-01'), --pondrÌa getdate() pero los datos los dubo por primera vez y me darÌa error.
+		VigenteHasta DATE NOT NULL CHECK (VigenteHasta >= '2025-01-01'), --pondr√≠a getdate() pero los datos los dubo por primera vez y me dar√≠a error.
 
-		CONSTRAINT CK_TarifaPileta_TipoTarifa CHECK (TipoTarifa IN ('DÌa', 'Mes', 'Temporada')),
-		CONSTRAINT CK_TarifaPileta_TipoPersona CHECK (TipoPersona IN ('Adulto', 'Menor de 12 aÒos')),
+		CONSTRAINT CK_TarifaPileta_TipoTarifa CHECK (TipoTarifa IN ('D√≠a', 'Mes', 'Temporada')),
+		CONSTRAINT CK_TarifaPileta_TipoPersona CHECK (TipoPersona IN ('Adulto', 'Menor de 12 a√±os')),
 		CONSTRAINT PK_Tarifa PRIMARY KEY (IdTarifa)
 	);
 END;   --25
@@ -494,7 +494,7 @@ ADD FechaLLuvia DATE
 go
 
 ALTER TABLE Facturacion.Reembolso  
-ADD CONSTRAINT FK_ReembolsoLLuvia FOREIGN KEY (FechaLLuvia) REFERENCES Accesos.Dia_Lluvia(Fecha) ----Reembolso deberÌa estar cargado previamente por el tema de los 
+ADD CONSTRAINT FK_ReembolsoLLuvia FOREIGN KEY (FechaLLuvia) REFERENCES Accesos.Dia_Lluvia(Fecha) ----Reembolso deber√≠a estar cargado previamente por el tema de los 
 go
 
 ALTER TABLE Facturacion.Factura ADD Detalle VARCHAR (50)
@@ -572,3 +572,7 @@ go
 ALTER TABLE Facturacion.Reembolso
 ADD CONSTRAINT UQ_Reembolso_IdPago_Modalidad
 UNIQUE (IdPago, Modalidad);       ----- es para evitar inserciones a mano en los reembolsos
+
+go
+alter table Facturacion.Factura 
+add Fecha_Pago DATE
