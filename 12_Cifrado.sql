@@ -55,11 +55,7 @@ BEGIN
         RETURN;
 	END;
 
-<<<<<<< HEAD
 	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Nro_Telefono = @Nro_Telefono)
-=======
-	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Nro_Telefono = Nro_Telefono)
->>>>>>> recuperar-historial
     BEGIN
         PRINT ('El numero de telefono ya existe. No se inserto el registro');
         RETURN;

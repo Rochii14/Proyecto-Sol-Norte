@@ -13,7 +13,6 @@ go
 
 --INSERTAR ID DE GRUPO FAMILIAR EN SOCIO
 
-<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Socios.Insertar_Id_GruporFamiliar
 AS
 BEGIN
@@ -26,26 +25,11 @@ BEGIN
 	SET IdGrupoFamiliar = gp.IdGrupoFamiliar
 	FROM Socios.GrupoFamiliar AS gp
 	WHERE Socios.Socio.NroSocio = gp.NroSocio
-=======
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Id_GruporFamiliar
-AS
-BEGIN
-	UPDATE ddbbaTP.Socio
-	SET IdGrupoFamiliar = gp.IdGrupoFamiliar
-	FROM ddbbaTP.GrupoFamiliar AS gp
-	WHERE ddbbaTP.Socio.NroSocio2 = gp.NroSocio
-
-	UPDATE ddbbaTP.Socio
-	SET IdGrupoFamiliar = gp.IdGrupoFamiliar
-	FROM ddbbaTP.GrupoFamiliar AS gp
-	WHERE ddbbaTP.Socio.NroSocio = gp.NroSocio
->>>>>>> recuperar-historial
 END;
 go
 ------------------------------------------------------------------------------------------
 --INSERTAR ID DE CATEGORIA EN SOCIO
 
-<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Socios.Insertar_Id_Categoria
 AS
 BEGIN
@@ -59,27 +43,11 @@ BEGIN
 
 	UPDATE Socios.Socio
 	SET IdCategoria = ( SELECT c.IdCategoria FROM Socios.Categoria AS c WHERE c.Nombre = 'Mayor' )
-=======
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Id_Categoria
-AS
-BEGIN
-	UPDATE ddbbaTP.Socio
-	SET IdCategoria = ( SELECT c.IdCategoria FROM ddbbaTP.Categoria AS c WHERE c.Nombre = 'Menor' )
-	WHERE DATEDIFF ( YEAR, (TRY_CONVERT (DATE, Fecha_De_Nacimiento, 103)), GETDATE ()) <= 12;
-
-	UPDATE ddbbaTP.Socio
-	SET IdCategoria = ( SELECT c.IdCategoria FROM ddbbaTP.Categoria AS c WHERE c.Nombre = 'Cadete' )
-	WHERE DATEDIFF( YEAR, TRY_CONVERT (DATE, Fecha_De_Nacimiento, 103), GETDATE ()) BETWEEN 13 AND 17;
-
-	UPDATE ddbbaTP.Socio
-	SET IdCategoria = ( SELECT c.IdCategoria FROM ddbbaTP.Categoria AS c WHERE c.Nombre = 'Mayor' )
->>>>>>> recuperar-historial
 	WHERE DATEDIFF( YEAR, TRY_CONVERT (DATE, Fecha_De_Nacimiento, 103), GETDATE ()) >= 18;
 END;
 go
 ------------------------------------------------------------------------------------------
 --INSERTO EN LA TABLA INSCRIPTO
-<<<<<<< HEAD
 
 CREATE OR ALTER PROCEDURE Clases.Insertar_Inscripto
 AS
@@ -96,40 +64,16 @@ go
 --INSERTAR DIA EN TABLA CLASE
 
 CREATE OR ALTER PROCEDURE Clases.Insertar_Dia_Clase
-=======
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Inscripto
-AS
-BEGIN
-	INSERT INTO ddbbaTP.Inscripto(NroSocio, IdActividad, FechaInscripcion)
-	SELECT DISTINCT AE.NroSocio, C.IdActividad, ISNULL(AE.FechaInscripcion, '2024-01-01')  -- provisoria
-	FROM ddbbaTP.Anotado_En AE 
-	JOIN ddbbaTP.Clase C ON AE.IdClase= C.IdClase
-	WHERE NOT EXISTS (SELECT 1 FROM  ddbbaTP.Inscripto I WHERE I.NroSocio=AE.NroSocio AND I.IdActividad =C.IdActividad)
- 
-END;
-GO
-
---------------------------------------------------------------------------------------------
-
---INSERTAR DIA EN TABLA CLASE
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Dia_Clase
->>>>>>> recuperar-historial
 AS
 BEGIN
 	SET LANGUAGE spanish
 
-<<<<<<< HEAD
 	UPDATE Clases.Clase
-=======
-	UPDATE ddbbaTP.Clase
->>>>>>> recuperar-historial
 	SET Dia = DATENAME(WEEKDAY, CONVERT(DATE, Fecha, 103))
 
 	SET LANGUAGE english;
 END;
 go
-<<<<<<< HEAD
 -------------------------------------------------------------------------------------------------
 --INSERTAR DATOS EN CUENTA
 
@@ -146,26 +90,6 @@ go
 -------------------------------------------------------------------------------------------------
 --INSERTAR DATOS EN INVITADO
 
-=======
-
--------------------------------------------------------------------------------------------------
---INSERTAR DATOS EN CUENTA
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Datos_Cuenta
-AS
-BEGIN
-	INSERT INTO ddbbaTP.Cuenta ( NroSocio )
-	SELECT s.NroSocio
-	FROM ddbbaTP.Socio AS s
-	WHERE NOT EXISTS ( SELECT 1 FROM ddbbaTP.Cuenta AS c WHERE c.NroSocio = s.NroSocio ) 
-			AND ( s.NroSocio2 IS NULL OR S.NroSocio IN ( SELECT gp.NroSocio FROM ddbbaTP.GrupoFamiliar AS gp ) )
-END;
-go
-
--------------------------------------------------------------------------------------------------
---INSERTAR DATOS EN INVITADO
-go
->>>>>>> recuperar-historial
 CREATE OR ALTER PROCEDURE CargaInvitadosRandom @CantInv INT
 AS
 BEGIN
@@ -184,11 +108,7 @@ BEGIN
 
     -- Verificar que haya socios disponibles que sean responsables de un grupo familiar
     -- (aquellos que tienen un registro en la tabla GrupoFamiliar)
-<<<<<<< HEAD
     IF NOT EXISTS (SELECT 1 FROM Socios.GrupoFamiliar)
-=======
-    IF NOT EXISTS (SELECT 1 FROM ddbbaTP.GrupoFamiliar)
->>>>>>> recuperar-historial
     BEGIN
         PRINT 'Advertencia: La tabla GrupoFamiliar está vacía. No hay socios responsables de grupo familiar para asociar invitados.';
         RETURN;
@@ -203,11 +123,7 @@ BEGIN
         -- Seleccionar un socio aleatorio que sea responsable de un grupo familiar
         -- (un NroSocio que exista en la tabla GrupoFamiliar)
         SELECT TOP 1 @Nro_Socio = NroSocio 
-<<<<<<< HEAD
         FROM Socios.GrupoFamiliar 
-=======
-        FROM ddbbaTP.GrupoFamiliar 
->>>>>>> recuperar-historial
         ORDER BY NEWID();
 
         -- Generar una fecha de nacimiento aleatoria entre 1950-01-01 y 2020-12-31
@@ -215,11 +131,7 @@ BEGIN
         DECLARE @FechaNacimientoDate DATE = DATEADD(DAY, @DiasRandom, '19500101');
         SET @FechaNacimiento = FORMAT(@FechaNacimientoDate, 'dd/MM/yyyy');
 
-<<<<<<< HEAD
         INSERT INTO Accesos.Invitado (Dni, Nombre, Nro_Socio, IdFactura, Fecha_De_Nacimiento)
-=======
-        INSERT INTO ddbbaTP.Invitado (Dni, Nombre, Nro_Socio, IdFactura, Fecha_De_Nacimiento)
->>>>>>> recuperar-historial
         VALUES (@Dni, @Nombre, @Nro_Socio, NULL, @FechaNacimiento);
 
         SET @i = @i + 1;
@@ -231,18 +143,10 @@ go
 
 EXEC CargaInvitadosRandom @CantInv = 10;
 go
-<<<<<<< HEAD
 -------------------------------------------------------------------------------------------------
 --INSERTAR JERARQUIA EN ACTIVIDADES EXTRA
 
 CREATE OR ALTER PROCEDURE Accesos.InsertarActividadJerarquica
-=======
-
--------------------------------------------------------------------------------------------------
---INSERTAR JERARQUIA EN ACTIVIDADES EXTRA
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.InsertarActividadJerarquica
->>>>>>> recuperar-historial
     @TipoActividad VARCHAR(50),
     @SubTipo VARCHAR(20), -- 'Colonia', 'Sum', 'Pileta'
     @FechaInicio VARCHAR(10) = NULL,
@@ -256,11 +160,7 @@ BEGIN
     DECLARE @IdActExtra INT;
 
     -- 1. Insertar en ActividadExtra
-<<<<<<< HEAD
     INSERT INTO Accesos.ActividadExtra (Tipo)
-=======
-    INSERT INTO ddbbaTP.ActividadExtra (Tipo)
->>>>>>> recuperar-historial
     VALUES (@TipoActividad);
 
     -- Obtener el ID generado
@@ -269,29 +169,17 @@ BEGIN
     -- 2. Insertar en la tabla correspondiente
     IF @SubTipo = 'Colonia'
     BEGIN
-<<<<<<< HEAD
         INSERT INTO Accesos.Colonia (IdActividadExtra, FechaInicio, FechaFin, Precio)
-=======
-        INSERT INTO ddbbaTP.Colonia (IdActividadExtra, FechaInicio, FechaFin, Precio)
->>>>>>> recuperar-historial
         VALUES (@IdActExtra, @FechaInicio, @FechaFin, @Precio);
     END
     ELSE IF @SubTipo = 'Sum'
     BEGIN
-<<<<<<< HEAD
         INSERT INTO Accesos.Sum_Recreativo (IdActividadExtra, Precio)
-=======
-        INSERT INTO ddbbaTP.Sum_Recreativo (IdActividadExtra, Precio)
->>>>>>> recuperar-historial
         VALUES (@IdActExtra, @Precio);
     END
     ELSE IF @SubTipo = 'Pileta'
     BEGIN
-<<<<<<< HEAD
         INSERT INTO Accesos.Pileta (IdActividadExtra, Fec_Temporada)
-=======
-        INSERT INTO ddbbaTP.Pileta (IdActividadExtra, Fec_Temporada)
->>>>>>> recuperar-historial
         VALUES (@IdActExtra, @Fec_Temporada);
     END
     ELSE
@@ -303,11 +191,7 @@ END;
 go
 
 -- Colonia
-<<<<<<< HEAD
 EXEC Accesos.InsertarActividadJerarquica
-=======
-EXEC ddbbaTP.InsertarActividadJerarquica
->>>>>>> recuperar-historial
     @TipoActividad = 'Recreativa',
     @SubTipo = 'Colonia',
     @FechaInicio = '2025-01-10',
@@ -316,27 +200,18 @@ EXEC ddbbaTP.InsertarActividadJerarquica
 go
 
 -- Sum recreativo
-<<<<<<< HEAD
 EXEC Accesos.InsertarActividadJerarquica
-=======
-EXEC ddbbaTP.InsertarActividadJerarquica
->>>>>>> recuperar-historial
     @TipoActividad = 'Recreativa',
     @SubTipo = 'Sum',
     @Precio = 18000;
 go
 
 -- Pileta
-<<<<<<< HEAD
 EXEC Accesos.InsertarActividadJerarquica
-=======
-EXEC ddbbaTP.InsertarActividadJerarquica
->>>>>>> recuperar-historial
     @TipoActividad = 'Recreativa',
     @SubTipo = 'Pileta',
     @Fec_Temporada = '2025-01-01';
 go
-<<<<<<< HEAD
 -------------------------------------------------------------------------------------------------
 --INSERTAR MEDIOS DE PAGO
 
@@ -359,55 +234,20 @@ go
 --ASIGNAR MONTO A CATEGORIA
 
 CREATE OR ALTER PROCEDURE Socios.Asignar_Monto_Categoria  @EdadS INT,  @MontoBaseS DECIMAL(10,2) OUTPUT
-=======
-
--------------------------------------------------------------------------------------------------
-
---INSERTAR MEDIOS DE PAGO
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Visa', @Tipo= 'Credito', @Modalidad= 'Tarjeta'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='MasterCard', @Tipo= 'Credito', @Modalidad= 'Tarjeta'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Tarjeta Naranja', @Tipo= 'Debito', @Modalidad= 'Tarjeta'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Pago Facil', @Tipo= 'Contado', @Modalidad= 'Presencial'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Rapipago', @Tipo= 'Contado', @Modalidad= 'Presencial'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Mercado Pago', @Tipo= 'Billetera', @Modalidad= 'Transferencia'
-go
-execute ddbbaTP.InsertarMedioDePago @Nombre='Efectivo', @Tipo= 'Contado', @Modalidad= 'Presencial'
-
----------------------------------------------------------------------------------------------------------------
-
---ASIGNAR MONTO A CATEGORIA
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Asignar_Monto_Categoria  @EdadS INT,  @MontoBaseS DECIMAL(10,2) OUTPUT
->>>>>>> recuperar-historial
 AS
 BEGIN
     IF @EdadS > 12 AND @EdadS < 18
     BEGIN
-<<<<<<< HEAD
         SELECT @MontoBaseS = Costo FROM Socios.Categoria  
-=======
-        SELECT @MontoBaseS = Costo FROM ddbbaTP.Categoria  
->>>>>>> recuperar-historial
 		WHERE Nombre = 'Cadete';
     END
     ELSE IF @EdadS >= 18
     BEGIN
-<<<<<<< HEAD
         SELECT @MontoBaseS = Costo FROM Socios.Categoria 
-=======
-        SELECT @MontoBaseS = Costo FROM ddbbaTP.Categoria 
->>>>>>> recuperar-historial
         WHERE Nombre = 'Mayor';
     END
     ELSE
     BEGIN
-<<<<<<< HEAD
         SELECT @MontoBaseS = Costo  FROM Socios.Categoria 
         WHERE Nombre = 'Menor';
     END
@@ -428,25 +268,6 @@ go
 --ASIGNAR MONTO A PILETA
 
 CREATE OR ALTER PROCEDURE Accesos.Asignar_Monto_Pileta
-=======
-        SELECT @MontoBaseS = Costo  FROM ddbbaTP.Categoria 
-        WHERE Nombre = 'Menor';
-    END
-END;
-
------------------------------------------------------------------------------------------------------------------
---ASIGNAR MONTO A ACTIVIDAD
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Asignar_Monto_Actividad @NombreAct VARCHAR(100), @MontoBaseS DECIMAL(10,2) OUTPUT
-AS
-BEGIN
-	select @MontoBaseS=a.Costo from ddbbaTP.Actividad a where a.Nombre like @NombreAct
-END;
-------------------------------------------------------------------------------------------------------------------------
---ASIGNAR MONTO A PILETA
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Asignar_Monto_Pileta
->>>>>>> recuperar-historial
     @EdadPersona INT,
     @EsSocio BIT,                    -- 1 = socio, 0 = invitado
     @TipoPase VARCHAR(20) = 'Día',   -- 'Día', 'Mes' o 'Temporada' (opcional, default = 'Día')
@@ -459,21 +280,13 @@ BEGIN
     IF @TipoPase NOT IN ('Día', 'Mes', 'Temporada')
     BEGIN
         THROW 60001, 'Tipo de pase inválido. Debe ser Día, Mes o Temporada.', 1;
-<<<<<<< HEAD
     END;
-=======
-    END
->>>>>>> recuperar-historial
 
     -- Invitados solo pueden acceder a pase del día
     IF @EsSocio = 0 AND @TipoPase <> 'Día'
     BEGIN
         THROW 60002, 'Los invitados solo pueden acceder al pase del día.', 1;
-<<<<<<< HEAD
     END;
-=======
-    END
->>>>>>> recuperar-historial
 
     -- Asignar monto según edad y tipo de persona
     IF @EsSocio = 1
@@ -492,19 +305,11 @@ BEGIN
         SET @MontoBaseS = CASE WHEN @EdadPersona < 12 THEN 2000 ELSE 30000 END;
     END
 END;
-<<<<<<< HEAD
 go
 ---------------------------------------------------------------------------------------------------------
 --VALIDAR TIPO DE PERSONA (SOCIO O INVITADO)
 
 CREATE OR ALTER PROCEDURE Socios.Validar_TipoPersona
-=======
-GO
----------------------------------------------------------------------------------------------------------
---VALIDAR TIPO DE PERSONA (SOCIO O INVITADO)
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Validar_TipoPersona
->>>>>>> recuperar-historial
     @Identificador VARCHAR(10),         -- Puede ser NroSocio o IdInvitado
     @EsSocio BIT OUTPUT,                -- 1 si es socio, 0 si es invitado
     @Existe BIT OUTPUT                  -- 1 si existe en alguna tabla, 0 si no
@@ -515,11 +320,7 @@ BEGIN
     SET @Existe = 0;
 
     IF EXISTS (
-<<<<<<< HEAD
         SELECT 1 FROM Socios.Socio WHERE NroSocio = @Identificador
-=======
-        SELECT 1 FROM ddbbaTP.Socio WHERE NroSocio = @Identificador
->>>>>>> recuperar-historial
     )
     BEGIN
         SET @EsSocio = 1;
@@ -528,11 +329,7 @@ BEGIN
     END
 
     IF EXISTS (
-<<<<<<< HEAD
         SELECT 1 FROM Accesos.Invitado WHERE IdInvitado = @Identificador
-=======
-        SELECT 1 FROM ddbbaTP.Invitado WHERE IdInvitado = @Identificador
->>>>>>> recuperar-historial
     )
     BEGIN
         SET @EsSocio = 0;
@@ -540,20 +337,12 @@ BEGIN
         RETURN;
     END
 END;
-<<<<<<< HEAD
 go
 
 ---------------------------------------------------------------------------------------------------------
 -- ACTUALIZAR MORA FACTURAS
 
 CREATE OR ALTER PROCEDURE Facturacion.Actualizar_Morosidad
-=======
-GO
-
----- ACTUALIZAR MORA FACTURAS
-go
-CREATE OR ALTER PROCEDURE ddbbaTP.Actualizar_Morosidad
->>>>>>> recuperar-historial
 AS
 BEGIN
     SET NOCOUNT ON; -- Evita que se devuelvan recuentos de filas afectados.
@@ -569,11 +358,7 @@ BEGIN
             F.Estado = 'Vencido', -- Cambia el estado a 'Vencido' si aún no lo está
             F.Dias_Atrasados = DATEDIFF(DAY, TRY_CONVERT(DATE, F.Fecha_Vencimiento), @FechaActual)
         FROM
-<<<<<<< HEAD
             Facturacion.Factura AS F
-=======
-            ddbbaTP.Factura AS F
->>>>>>> recuperar-historial
         WHERE
             TRIM(F.Estado) = 'Pendiente' -- Solo facturas pendientes
             AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) IS NOT NULL -- Asegura que la fecha de vencimiento sea válida
@@ -591,7 +376,6 @@ BEGIN
         RAISERROR(@Msg, 16, 1);
     END CATCH
 END;
-<<<<<<< HEAD
 go
 
 CREATE OR ALTER PROCEDURE Facturacion.Actualizar_Fecha_Vencimiento
@@ -692,5 +476,3 @@ BEGIN
     END;
 END;
 GO
-=======
->>>>>>> recuperar-historial
