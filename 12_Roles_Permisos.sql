@@ -9,72 +9,10 @@
 			  44588998 | Valdevieso Rocío Elizabeth
 */
 
--------------------------------------------- CREACIÓN DE LOGINS -----------------------------------------------------
-USE master
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'Rocio_Tesoreria')
-BEGIN
-	CREATE LOGIN Rocio_Tesoreria WITH PASSWORD = 'Leon123'
-END;
-go
- 
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'Jazmin_Socios')
-BEGIN
-	CREATE LOGIN Jazmin_Socios 
-	WITH PASSWORD = 'Elefante123',
-	CHECK_POLICY = OFF,
-	CHECK_EXPIRATION = OFF;
-END;
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'Samuel_Presidente')
-BEGIN
-	CREATE LOGIN Samuel_Presidente 
-	WITH PASSWORD = 'Oso123',
-	DEFAULT_DATABASE = Com5600G08,
-	CHECK_POLICY = OFF,
-	CHECK_EXPIRATION = OFF;
-END;
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'Gabriel_Tesoreria')
-BEGIN
-	CREATE LOGIN Gabriel_Tesoreria WITH PASSWORD = 'Puma123'
-END;
-go
-
--------------------------------------------- CREACIÓN DE USUARIOS EN LA BASE DE DATOS --------------------------------------------
-
-USE Com5600G08;
-go
-
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'Rocio_Tesoreria')
-BEGIN
-    CREATE USER Rocio_Tesoreria FOR LOGIN Rocio_Tesoreria;
-END;
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'Jazmin_Socios')
-BEGIN
-	CREATE USER Jazmin_Socios FOR LOGIN Jazmin_Socios;
-END;
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'Samuel_Presidente')
-BEGIN
-    CREATE USER Samuel_Presidente FOR LOGIN Samuel_Presidente;
-END;
-go
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'Gabriel_Tesoreria')
-BEGIN
-	CREATE USER Gabriel_Tesoreria FOR LOGIN Gabriel_Tesoreria;
-END;
-go
 
 ----------------------------------------- CREACIÓN DE ROLES Y ASIGNACIÓN DE PERMISOS --------------------------------------------
+USE Com5600G08
+go
 
 --AREA TESORERIA: Jefe de tesoreria.
 
@@ -245,15 +183,25 @@ GRANT SELECT ON Accesos.PasePileta      TO Vocal;
 
 ----------------------------------------- ASIGNACIÓN DE ROLES A USUARIOS --------------------------------------------
 
-ALTER ROLE Jefe_De_Tesoreria ADD MEMBER Rocio_Tesoreria;
+ALTER ROLE Jefe_De_Tesoreria ADD MEMBER Usuario_JefeTesoreria;		
+go
+ALTER ROLE Administrativo_De_Cobranza ADD MEMBER Usuario_Cobranza;
+go
+ALTER ROLE Administrativo_De_Morosidad ADD MEMBER Usuario_Morosidad;
+go
+ALTER ROLE Administrativo_De_Facturacion ADD MEMBER Usuario_Facturacion;
+go
+ALTER ROLE Administrativo_Socio ADD MEMBER Usuario_Socio;
+go
+ALTER ROLE Socio_Web ADD MEMBER Usuario_SociosWeb;
+go
+ALTER ROLE Presidente ADD MEMBER Usuario_Presidente;
+go
+ALTER ROLE Vicepresidente ADD MEMBER Usuario_Vicepresidente;
+go
+ALTER ROLE Secretario ADD MEMBER Usuario_Secretario;
+go
+ALTER ROLE Vocal ADD MEMBER Usuario_Vocal;
 go
 
-ALTER ROLE Administrativo_Socio ADD MEMBER Jazmin_Socios;
-go
-
-ALTER ROLE Presidente ADD MEMBER Samuel_Presidente;
-go
-
-ALTER ROLE Administrativo_De_Cobranza ADD MEMBER Gabriel_Tesoreria;
-go
-
+ 
