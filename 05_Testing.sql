@@ -319,3 +319,50 @@ UPDATE Accesos.Invitado SET Nombre='Probando Insercion' WHERE Nombre = ('SN-8000
 DELETE FROM Accesos.Invitado WHERE Nro_Socio = ('SN-4005');
 
 REVERT;
+
+---------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Presidente'; 
+go 
+
+-- No debe permitir: 
+INSERT INTO Socios.Categoria ( Nombre, Costo, Vigente_Hasta, Estado ) VALUES ('Infantil', '12000.00', '31/5/2025', 'Inactivo') 
+
+--Debe permitir: 
+SELECT * FROM Facturacion.MedioDePago 
+
+REVERT;
+---------------------------------------------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Vicepresidente'; 
+go 
+
+-- No debe permitir: 
+UPDATE Socios.Socio 
+SET Fecha_De_Nacimiento = NULL 
+WHERE NroSocio2 IS NOT NULL; 
+
+--Debe permitir: 
+SELECT * FROM Clases.Clase 
+
+REVERT;
+-----------------------------------------------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Secretario'; 
+go 
+
+-- No debe permitir: 
+DELETE FROM Clases.Asiste 
+
+--Debe permitir: 
+SELECT * FROM Accesos.Invitado 
+
+REVERT;
+-----------------------------------------------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Vocal'; 
+go 
+
+--No debe permitir: 
+ALTER TABLE Clases.Actividad ADD Dificultad VARCHAR (20); 
+
+--Debe permitir: 
+SELECT * FROM Accesos.PasePileta 
+
+REVERT;
