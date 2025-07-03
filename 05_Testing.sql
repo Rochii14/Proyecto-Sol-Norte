@@ -229,3 +229,93 @@ EXEC Facturacion.ModificarDescuento       --  Modificar descuento sin especifica
     @IdGrupoFamiliar = NULL,
     @NroSocio = NULL;
 GO
+----------------------------------------- USUARIOS
+
+EXECUTE AS USER = 'Usuario_JefeTesoreria';					
+go
+--En schema Facturacion
+-- Debe permitir:
+SELECT TOP 5 * FROM Facturacion.Cuota;         
+INSERT INTO Facturacion.Cuota(Estado) VALUES('Test Cuota'); 
+UPDATE Facturacion.Cuota SET Estado='Test cuota actualizado'  WHERE Estado='Test Cuota';
+DELETE FROM Facturacion.Cuota WHERE Estado='Test cuota actualizado';
+
+REVERT;-- Volver al contexto original
+
+---------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Cobranza';					
+go
+ -- Debe permitir:
+SELECT TOP 5 * FROM Facturacion.MedioDePago;
+-- NO debe permitir:
+INSERT INTO Facturacion.MedioDePago (Nombre) VALUES ('Test MP');
+UPDATE Facturacion.MedioDePago SET Nombre = 'Actualizado' WHERE IdMedioPago = 1;
+DELETE FROM Facturacion.MedioDePago WHERE  IdMedioPago= 1;
+
+
+REVERT;
+---------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Morosidad';					
+go
+-- Debe permitir:
+SELECT TOP 5 * FROM Facturacion.Descuento;
+-- No debe permitir:
+INSERT INTO Facturacion.Descuento (NroSocio) VALUES ('SN-8000'); 
+UPDATE Facturacion.Descuento SET Estado= 'No debería actualizarse' WHERE IdDescuento = 1;
+DELETE FROM Facturacion.Descuento WHERE NroSocio = ('SN-4005');
+
+-- No debe permitir (Revoke):
+SELECT TOP 5 * FROM Facturacion.Pago;
+INSERT INTO Facturacion.Pago (Monto) VALUES (99999); 
+UPDATE Facturacion.Pago SET Monto= 99999 WHERE IdPago = 1;
+DELETE FROM Facturacion.Pago WHERE IdPago = 107433442786;
+
+REVERT;
+
+---------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_Facturacion';					
+go
+-- Debe permitir:
+SELECT TOP 5 * FROM Facturacion.Cuota;
+UPDATE Facturacion.Cuota SET Estado= 'Actualizada' WHERE IdCuota = 1;
+-- No debe permitir:
+DELETE FROM Facturacion.Cuota WHERE IdCuota = 1;
+
+REVERT;
+
+---------------------------------------------------------------------------
+
+EXECUTE AS USER = 'Usuario_Socio';					
+go
+
+-- Debe permitir:
+SELECT TOP 5 * FROM Socios.Socio;
+UPDATE Socios.Socio SET Nro_Obra_Social= 99999 WHERE Nombre = ('Probando Insercion');
+DELETE FROM Socios.Socio WHERE NroSocio = ('SN-4005');
+
+-- No debe permitir (REVOKE):
+SELECT TOP 5 * FROM Socios.Categoria;
+INSERT INTO Socios.Categoria (Nombre) VALUES ('No debería insertarse'); 
+UPDATE Socios.Categoria SET Costo= 99999 WHERE IdCategoria = 1;
+DELETE FROM Socios.Categoria WHERE IdCategoria = 1;
+
+REVERT;
+
+---------------------------------------------------------------------------
+EXECUTE AS USER = 'Usuario_SociosWeb';					
+go
+
+-- Debe permitir:
+SELECT TOP 5 * FROM Clases.Profesor;
+-- No debe permitir:
+INSERT INTO Clases.Profesor (Email_Personal) VALUES ('Probando@Insercion'); 
+UPDATE Clases.Profesor SET Estado= 'No debería actualizarse' WHERE IdProfesor = 1;
+DELETE FROM Clases.Profesor WHERE Nombre_Completo = ('Pablo Rodrigez');
+
+-- Debe permitir:
+SELECT TOP 5 * FROM Accesos.Invitado;
+INSERT INTO Accesos.Invitado (Nro_Socio) VALUES ('SN-8000'); 
+UPDATE Accesos.Invitado SET Nombre='Probando Insercion' WHERE Nombre = ('SN-8000');
+DELETE FROM Accesos.Invitado WHERE Nro_Socio = ('SN-4005');
+
+REVERT;
