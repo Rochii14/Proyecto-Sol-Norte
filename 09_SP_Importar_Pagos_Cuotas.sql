@@ -295,143 +295,151 @@ select * from Facturacion.Factura
 go
 --------------------------------------------------------------------------------------------------------------------------------
 ---------HACER GENERAR FACTURA ACTIVIDAD EXTRA
-CREATE OR ALTER PROCEDURE Facturacion.GenerarCuotaYFacturaActividadExtra @NroPersona VARCHAR(10),  @NombreActividad VARCHAR(50),@IdMedioPago INT NULL
+CREATE OR ALTER PROCEDURE Facturacion.GenerarFacturaActividadExtraSocio  @NroSocio VARCHAR(10), @IdActExtra INT
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        DECLARE @IdCuota INT, @IdFactura INT, @MontoBase DECIMAL(10,2);
-        DECLARE @FechaNacimiento DATE, @Edad INT;
-        DECLARE @IdGrupoFamiliar INT = NULL;
-        DECLARE @Responsable VARCHAR(10);
-        DECLARE @FechaEmision DATE = GETDATE();
-        DECLARE @FechaVencimiento DATE = DATEADD(DAY, 5, GETDATE());
-        DECLARE @FechaVencimiento2 DATE = DATEADD(DAY, 10, GETDATE());
-        DECLARE @EsSocio BIT, @Existe BIT;
-        DECLARE @IdInvitadoInt INT;
-        DECLARE @IdActividadExtra INT;
-        --PRINT 'DEBUG: Generar para ' + @NroPersona + ', Actividad = ' + @NombreActividad;
-        EXEC Socios.Validar_TipoPersona   @Identificador = @NroPersona,  @EsSocio = @EsSocio OUTPUT,  @Existe = @Existe OUTPUT;
-        IF @Existe = 0
-            THROW 50000, 'El identificador no corresponde a un socio ni invitado.', 1;
+        DECLARE  @TipoActividad VARCHAR(50),  @Monto DECIMAL(10,2), @IdCuota INT,  @IdFactura INT,
+            @FechaEmision DATE = GETDATE(),  @FechaVencimiento DATE = DATEADD(DAY, 5, GETDATE()),  @FechaVencimiento2 DATE = DATEADD(DAY, 10, GETDATE());
 
-        IF @EsSocio = 1
+        -- 1. Obtener tipo de actividad
+        SELECT @TipoActividad = Tipo
+        FROM Accesos.ActividadExtra
+        WHERE IdActExtra = @IdActExtra;
+
+        IF @TipoActividad IS NULL
+            THROW 50000, 'Actividad no encontrada.', 1;
+
+        -- 2. Obtener monto según el tipo de actividad
+        IF @TipoActividad = 'Colonia'
         BEGIN
-            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),    @IdGrupoFamiliar = IdGrupoFamiliar
-            FROM Socios.Socio  WHERE NroSocio = @NroPersona;
-
-            SET @Responsable = ISNULL(  (SELECT NroSocio FROM Socios.GrupoFamiliar WHERE IdGrupoFamiliar = @IdGrupoFamiliar),   @NroPersona );
+            SELECT @Monto = Precio
+            FROM Accesos.Colonia
+            WHERE IdActividadExtra = @IdActExtra;
+        END
+        ELSE IF @TipoActividad = 'Pileta'
+        BEGIN
+            -- Suponemos que hay una sola temporada actual (última por fecha)
+            SELECT TOP 1 @Monto = 0 -- no hay campo precio directo en Pileta
+            FROM Accesos.Pileta
+            WHERE IdActividadExtra = @IdActExtra
+            ORDER BY Fec_Temporada DESC;
+        END
+        ELSE IF @TipoActividad = 'Sum' OR @TipoActividad = 'Sum_Recreativo'
+        BEGIN
+            SELECT @Monto = Precio
+            FROM Accesos.Sum_Recreativo
+            WHERE IdActividadExtra = @IdActExtra;
         END
         ELSE
-        BEGIN
-            SET @IdInvitadoInt = TRY_CAST(@NroPersona AS INT);
-            IF @IdInvitadoInt IS NULL
-                THROW 50000, 'IdInvitado no válido.', 1;
+            THROW 50001, 'Tipo de actividad no reconocido.', 1;
 
-            SELECT @FechaNacimiento = TRY_CONVERT(DATE, Fecha_De_Nacimiento, 103),   @Responsable = Nro_Socio  FROM Accesos.Invitado
-            WHERE IdInvitado = @IdInvitadoInt;
+        IF @Monto IS NULL OR @Monto <= 0
+            THROW 50002, 'Monto no válido para la actividad.', 1;
 
-            IF @Responsable IS NULL
-                THROW 50000, 'El invitado no tiene socio responsable.', 1;
-        END
-
-        IF @FechaNacimiento IS NULL
-            THROW 50010, 'Fecha de nacimiento inválida.', 1;
-
-        SET @Edad = DATEDIFF(YEAR, @FechaNacimiento, GETDATE()) - CASE WHEN MONTH(@FechaNacimiento) > MONTH(GETDATE()) OR (MONTH(@FechaNacimiento) = MONTH(GETDATE()) AND DAY(@FechaNacimiento) > DAY(GETDATE()))
-                       THEN 1 ELSE 0 END;
-
-        -- Monto base + ID Actividad Extra
-        IF @NombreActividad = 'Pileta'
-        BEGIN
-			-- Validar temporada de pileta (solo diciembre, enero y febrero)
-			DECLARE @MesActual INT = MONTH(GETDATE());
-			IF @MesActual NOT IN (12, 1, 2)
-				THROW 50025, 'La pileta no está habilitada en esta temporada.', 1;
-            EXEC Accesos.Asignar_Monto_Pileta    @EdadPersona = @Edad,  @EsSocio = @EsSocio,  @TipoPase = 'Día',  @MontoBaseS = @MontoBase OUTPUT;
-
-            SELECT @IdActividadExtra = a.IdActExtra  FROM Accesos.ActividadExtra a
-            INNER JOIN Accesos.Pileta p ON a.IdActExtra = p.IdActividadExtra WHERE a.Tipo = 'Pileta';
-        END
-        ELSE IF @NombreActividad = 'Sum Recreativo'
-        BEGIN
-            SELECT TOP 1 @MontoBase = Precio FROM Accesos.Sum_Recreativo;
-            SELECT @IdActividadExtra = a.IdActExtra FROM Accesos.ActividadExtra a  INNER JOIN Accesos.Sum_Recreativo s ON a.IdActExtra = s.IdActividadExtra
-            WHERE a.Tipo = 'Sum Recreativo';
-        END
-        ELSE IF @NombreActividad = 'Colonia'
-        BEGIN
-            SELECT TOP 1 @MontoBase = Precio FROM Accesos.Colonia;
-            SELECT @IdActividadExtra = a.IdActExtra  FROM Accesos.ActividadExtra a
-            INNER JOIN Accesos.Colonia c ON a.IdActExtra = c.IdActividadExtra  WHERE a.Tipo = 'Colonia';
-        END
-        ELSE
-            THROW 50020, 'Nombre de actividad no válido.', 1;
-
-        IF @MontoBase IS NULL OR @IdActividadExtra IS NULL
-            THROW 50030, 'Monto base o actividad extra no encontrado.', 1;
-
-        -- Insertar cuota
-        INSERT INTO Socios.Cuota (  Estado, NroSocio, Socio_Cuota, IdActividadExtra  )
-        VALUES (  'Pendiente',  @Responsable,  CASE WHEN @EsSocio = 1 THEN @NroPersona ELSE NULL END,  @IdActividadExtra  );
+        -- 3. Insertar cuota
+        INSERT INTO Facturacion.Cuota (Estado, NroSocio)
+        VALUES ('Pendiente', @NroSocio);
         SET @IdCuota = SCOPE_IDENTITY();
 
-        -- Insertar factura
-        IF @EsSocio = 0 AND @NombreActividad = 'Pileta'
-        BEGIN
-            INSERT INTO Facturacion.Factura ( Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,  Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
-            VALUES (
-                CONVERT(VARCHAR(10), @FechaEmision, 120),
-                CONVERT(VARCHAR(10), @FechaVencimiento, 120),
-                CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
-                @MontoBase, 0, 'Pagada', NULL, @IdCuota, @NombreActividad
-            );
-            SET @IdFactura = SCOPE_IDENTITY();
+        -- 4. Insertar factura
+        INSERT INTO Facturacion.Factura (
+            Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2,
+            Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
+        VALUES (
+            @FechaEmision, @FechaVencimiento, @FechaVencimiento2,
+            @Monto, 0, 'Pendiente', NULL, @IdCuota, @TipoActividad);
 
-            DECLARE @IdCuenta INT;
-            SELECT @IdCuenta = IdCuenta FROM Socios.Cuenta WHERE NroSocio = @Responsable;
+        SET @IdFactura = SCOPE_IDENTITY();
 
-            IF @IdCuenta IS NULL
-                THROW 50050, 'Cuenta no encontrada.', 1;
-
-            INSERT INTO Facturacion.Pago (  IdPago, Fecha_de_Pago, IdCuenta, IdFactura, IdMedioDePago, Monto  )
-            VALUES ( (SELECT ISNULL(MAX(IdPago), 0) + 1 FROM Facturacion.Pago),CONVERT(VARCHAR(10), GETDATE(), 103), @IdCuenta, @IdFactura, @IdMedioPago, @MontoBase
-            );
-        END
-        ELSE
-        BEGIN
-            INSERT INTO Facturacion.Factura (Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle )
-            VALUES ( CONVERT(VARCHAR(10), @FechaEmision, 120), CONVERT(VARCHAR(10), @FechaVencimiento, 120),  CONVERT(VARCHAR(10), @FechaVencimiento2, 120),   @MontoBase, 0, 'Pendiente', NULL, @IdCuota, @NombreActividad  );
-            SET @IdFactura = SCOPE_IDENTITY();
-        END
-
-       IF @NombreActividad = 'Pileta' AND @EsSocio = 0
-		BEGIN
-			DECLARE @FechaTemporada DATE = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0); -- primer día del trimestre actual
-
-			EXEC Facturacion.HabilitarPasePileta   @TarifaSocio = 0, @TarifaInvitado = @MontoBase,
-				@NroSocio = @Responsable, @IdInvitado = @IdInvitadoInt, @Fec_Temporada = @FechaTemporada;
-		END;
+        PRINT 'Factura generada exitosamente. IdFactura = ' + CAST(@IdFactura AS VARCHAR);
 
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        PRINT 'ERROR: ' + ERROR_MESSAGE();
+        PRINT ERROR_MESSAGE();
         THROW;
     END CATCH
 END;
 GO
-select * from Facturacion.Factura
-go
+CREATE OR ALTER PROCEDURE Facturacion.GenerarFacturaPiletaInvitado  @IdInvitado INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
 
-select * from Facturacion.MedioDePago
-execute Facturacion.GenerarCuotaYFacturaActividadExtra     @NroPersona = '5' ,  @NombreActividad= 'Pileta', @IdMedioPago = 1
-GO
-select * from Facturacion.Factura
-go
+        DECLARE 
+            @MontoFactura DECIMAL(12,2),
+            @FechaEmision DATE = GETDATE(),
+            @FechaVencimiento DATE,
+            @FechaVencimiento2 DATE,
+            @IdFactura INT;
+
+        -- Validar que exista el invitado
+        IF NOT EXISTS (SELECT 1 FROM Accesos.Invitado WHERE IdInvitado = @IdInvitado)
+        BEGIN
+            THROW 50000, 'El invitado no existe.', 1;
+        END
+
+        -- Validar que no tenga ya una factura asignada
+        IF EXISTS (SELECT 1 FROM Accesos.Invitado WHERE IdInvitado = @IdInvitado AND IdFactura IS NOT NULL)
+        BEGIN
+            THROW 50001, 'Este invitado ya tiene una factura asociada.', 1;
+        END
+
+        -- Obtener monto para invitado según tarifa vigente
+        SELECT TOP 1 @MontoFactura = MontoInvitado
+        FROM Accesos.TarifaPileta
+        WHERE (VigenteHasta IS NULL OR VigenteHasta >= @FechaEmision)
+        ORDER BY VigenteHasta ASC;
+
+        IF @MontoFactura IS NULL
+        BEGIN
+            THROW 50002, 'No se encontró una tarifa vigente para invitados.', 1;
+        END
+
+        -- Calcular fechas
+        SET @FechaVencimiento = DATEADD(DAY, 5, @FechaEmision);
+        SET @FechaVencimiento2 = DATEADD(DAY, 5, @FechaVencimiento);
+
+        -- Insertar factura
+        INSERT INTO Facturacion.Factura (
+            Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, 
+            Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle
+        )
+        VALUES (
+            CONVERT(VARCHAR(10), @FechaEmision, 120),
+            CONVERT(VARCHAR(10), @FechaVencimiento, 120),
+            CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
+            @MontoFactura, 0, 'Pendiente', NULL, NULL, 'Pileta - Invitado'
+        );
+
+        SET @IdFactura = SCOPE_IDENTITY();
+
+        -- Asociar factura al invitado
+        UPDATE Accesos.Invitado
+        SET IdFactura = @IdFactura
+        WHERE IdInvitado = @IdInvitado;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+
+----elupdate es para ver si se genera una factura con una fecha vigente, de otro modo no la genera
+----update Accesos.TarifaPileta set VigenteHasta = '20251212' where IdTarifa= 2 or IdTarifa=1
+
+
 ---------- ------------------------------------ ANULAR última FACTURA  de un socio que se dio de baja
 CREATE OR ALTER PROCEDURE Facturacion.AnularFacturasPorBajaSocio @NroSocio VARCHAR(10)
 AS
@@ -491,101 +499,44 @@ go
 
 --NOTA: No se actualizan las clases a las que está anotado el socio ni su grupo familiar por el momento
 -------------------------------------------------- PAGAR CUOTA/factura
-CREATE OR ALTER PROCEDURE Facturacion.PagarFactura @IdFactura INT,@MedioPago INT, @Valor DECIMAL(10,2)
+CREATE OR ALTER PROCEDURE Facturacion.PagarFactura @IdFactura INT
 AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        DECLARE 
-            @MontoFactura DECIMAL(10,2),
-            @EstadoFactura VARCHAR(20),
-            @NroSocio VARCHAR(10),
-            @FechaVenc DATE,
-            @DiasAtrasados INT,
-            @IdCuota INT,
-            @DetalleFactura VARCHAR(50),
-            @NuevoIdPago BIGINT,
-            @CurrentIdInvitado INT,
-            @CurrentNroSocioAsociadoInvitado VARCHAR(10),
-            @PasePiletaTarifaSocio DECIMAL(10,2) = 0.00,
-            @PasePiletaTarifaInvitado DECIMAL(10,2) = 0.00,
-            @EsFacturaDePileta BIT = 0,
-            @FecTemporadaCalculada DATE;
-
-        -- Obtener datos de la factura
-        SELECT  @MontoFactura = Monto_Total, @EstadoFactura = Estado, @FechaVenc = TRY_CAST(Fecha_Vencimiento AS DATE), @IdCuota = IdCuota,
-            @DetalleFactura = Detalle FROM Facturacion.Factura WHERE IdFactura = @IdFactura;
-
-        IF @MontoFactura IS NULL THROW 60001, 'Factura no encontrada.', 1;
-        IF @FechaVenc IS NULL THROW 60002, 'Fecha de vencimiento inválida.', 1;
-        IF @Valor <> @MontoFactura THROW 60003, 'El monto pagado no coincide con el total facturado.', 1;
-
-        -- Determinar socio responsable
-        SELECT @NroSocio = I.Nro_Socio   FROM Accesos.Invitado I  WHERE I.IdFactura = @IdFactura;
-
-        IF @NroSocio IS NULL  SELECT @NroSocio = C.NroSocio  FROM Facturacion.Cuota C   WHERE C.IdCuota = @IdCuota;
-
-        IF @NroSocio IS NULL THROW 60004, 'No se pudo determinar socio responsable.', 1;
-
-        IF NOT EXISTS (SELECT 1 FROM Socios.Cuenta WHERE NroSocio = @NroSocio)
-            THROW 60005, 'No existe cuenta para el socio responsable.', 1;
-
-        -- Insertar pago
-        SELECT @NuevoIdPago = ISNULL(MAX(IdPago), 0) + 1   FROM Facturacion.Pago;
-
-        IF EXISTS (SELECT 1 FROM Facturacion.Pago WHERE IdPago = @NuevoIdPago)
-            THROW 60006, 'Conflicto con ID de pago generado.', 1;
-
-        INSERT INTO Facturacion.Pago (IdPago, Fecha_de_Pago, Monto, IdFactura, IdMedioDePago) VALUES (@NuevoIdPago, CONVERT(VARCHAR(10), GETDATE(), 103), @Valor, @IdFactura, @MedioPago);
-
-        -- Actualizar saldo en cuenta
-        UPDATE Socios.Cuenta   SET Saldo_Favor = ISNULL(Saldo_Favor, 0) + @Valor WHERE NroSocio = @NroSocio;
-
-        -- Actualizar estado de factura
-        SET @DiasAtrasados = DATEDIFF(DAY, @FechaVenc, GETDATE());
-        IF @DiasAtrasados < 0 SET @DiasAtrasados = 0;
-
-        UPDATE Facturacion.Factura  SET Estado = 'Pagada',  Dias_Atrasados = @DiasAtrasados  WHERE IdFactura = @IdFactura;
-
-		UPDATE Facturacion.Cuota SET Estado = 'Pagada' WHERE IdCuota = @IdCuota;
-
-        -- Verificar si es factura de Pileta
-        IF LTRIM(RTRIM(UPPER(@DetalleFactura))) = 'PILETA'
+        -- Validar existencia de la factura
+        IF NOT EXISTS (SELECT 1 FROM Facturacion.Factura WHERE IdFactura = @IdFactura)
         BEGIN
-            SET @EsFacturaDePileta = 1;
+            THROW 60000, 'La factura no existe.', 1;
+        END
 
-            SELECT    @CurrentIdInvitado = I.IdInvitado,    @CurrentNroSocioAsociadoInvitado = I.Nro_Socio
-            FROM Accesos.Invitado I  WHERE I.IdFactura = @IdFactura;
+        -- Validar que no esté ya pagada
+        IF EXISTS (
+            SELECT 1 FROM Facturacion.Factura 
+            WHERE IdFactura = @IdFactura AND Estado = 'Pagada'
+        )
+        BEGIN
+            THROW 60001, 'La factura ya fue pagada.', 1;
+        END
 
-            -- Calcular temporada (ajustar si es necesario)
-            SET @FecTemporadaCalculada = DATEADD(qq, DATEDIFF(qq, 0, GETDATE()), 0);
+        -- Actualizar factura a estado "Pagada"
+        UPDATE Facturacion.Factura
+        SET Estado = 'Pagada',
+            Fecha_Pago = GETDATE()  -- Solo si tenés esta columna
+        WHERE IdFactura = @IdFactura;
 
-            IF @CurrentIdInvitado IS NOT NULL AND @CurrentNroSocioAsociadoInvitado IS NOT NULL
-            BEGIN
-                SET @PasePiletaTarifaInvitado = @MontoFactura;
-            END
-            ELSE
-            BEGIN
-                SET @PasePiletaTarifaSocio = @MontoFactura;
-                SET @CurrentNroSocioAsociadoInvitado = @NroSocio;
-            END
-
-            -- Habilitar pase de pileta
-            EXEC Facturacion.HabilitarPasePileta  @TarifaSocio = @PasePiletaTarifaSocio,  @TarifaInvitado = @PasePiletaTarifaInvitado,
-                @NroSocio = @CurrentNroSocioAsociadoInvitado,  @IdInvitado = @CurrentIdInvitado,   @Fec_Temporada = @FecTemporadaCalculada;
-            PRINT 'Pase pileta habilitado correctamente.';
-        END;
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        DECLARE @Msg NVARCHAR(4000) = ERROR_MESSAGE();
-        RAISERROR(@Msg, 16, 1);
-    END CATCH;
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
 END;
-GO
+
 ------------------------------Actalizar factura
 
 CREATE OR ALTER PROCEDURE Facturacion.ModificarFactura
@@ -659,8 +610,86 @@ BEGIN
         -- Capturar y relanzar el error para que la aplicación llamante lo maneje
         SET @MensajeError = ERROR_MESSAGE();
         RAISERROR(@MensajeError, 16, 1);
-    END CATCH
+    END CATCH
 END;
+
 go
 
-select * from
+CREATE or alter PROCEDURE Facturacion.ReembolsoPorLluvia
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Cargar una tabla temporal
+		SELECT 
+			p.IdPago,
+			p.Monto,
+			p.IdMedioDePago,
+			p.IdCuenta,
+			TRY_CAST(p.Fecha_de_Pago AS DATE) AS FechaConvertida
+		INTO #PagosValidos
+		FROM Facturacion.Pago p
+		WHERE TRY_CAST(p.Fecha_de_Pago AS DATE) IS NOT NULL;
+ 
+    -- Insertar reembolsos por lluvia
+    INSERT INTO Facturacion.Reembolso (Modalidad, IdMedioDePago, IdPago, Monto, FechaLLuvia)
+    SELECT 
+        'Lluvia',  p.IdMedioDePago,  p.IdPago,  CAST(p.Monto * 0.6 AS decimal(10,2)), p.FechaConvertida
+    FROM #PagosValidos p
+    INNER JOIN Accesos.Dia_Lluvia dl ON p.FechaConvertida = dl.Fecha
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM Facturacion.Reembolso r
+        WHERE r.IdPago = p.IdPago
+          AND r.Modalidad = 'Lluvia'
+    );
+ 
+    -- Acreditar el saldo a favor SOLO para los pagos que ya tienen reembolso de lluvia
+		UPDATE c
+		SET c.Saldo_Favor = ISNULL(c.Saldo_Favor, 0) + CAST(p.Monto * 0.6 AS decimal(10,2))
+		FROM Socios.Cuenta c
+		INNER JOIN #PagosValidos p ON c.IdCuenta = p.IdCuenta
+		INNER JOIN Accesos.Dia_Lluvia dl ON p.FechaConvertida = dl.Fecha
+		INNER JOIN Facturacion.Reembolso r ON r.IdPago = p.IdPago AND r.Modalidad = 'Lluvia';
+
+	DROP TABLE #PagosValidos;
+END;
+ 
+ 
+CREATE OR ALTER PROCEDURE Facturacion.ReembolsoPorCobro @IdPago BIGINT,  @Monto DECIMAL(10,2),  @Modalidad VARCHAR(30), @FechaLluvia DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdMedioDePago INT;
+    DECLARE @IdCuenta INT;
+
+    -- Obtener datos del pago
+    SELECT  @IdMedioDePago = IdMedioDePago,  @IdCuenta = IdCuenta
+    FROM Facturacion.Pago WHERE IdPago = @IdPago;
+
+    IF @IdMedioDePago IS NOT NULL AND @IdCuenta IS NOT NULL
+    BEGIN
+        -- Validar que no exista un reembolso previo con la misma modalidad para este pago
+        IF NOT EXISTS (
+            SELECT 1 FROM Facturacion.Reembolso  WHERE IdPago = @IdPago AND Modalidad = @Modalidad
+        )
+        BEGIN
+            -- Insertar el reembolso
+            INSERT INTO Facturacion.Reembolso (Modalidad, IdMedioDePago, IdPago, Monto, FechaLluvia)
+            VALUES (@Modalidad, @IdMedioDePago, @IdPago, @Monto, @FechaLluvia);
+
+            -- Acreditar el monto como saldo a favor
+            UPDATE Socios.Cuenta  SET Saldo_Favor = ISNULL(Saldo_Favor, 0) + @Monto
+            WHERE IdCuenta = @IdCuenta;
+        END
+        ELSE
+        BEGIN
+            PRINT 'Ya existe un reembolso con esta modalidad para este pago. No se acreditó nuevamente.';
+        END
+    END
+    ELSE
+    BEGIN
+        RAISERROR('No se encontró el pago o la cuenta asociada.', 16, 1);
+    END
+END;
+GO
