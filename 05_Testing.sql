@@ -230,10 +230,6 @@ EXEC Facturacion.ModificarDescuento       --  Modificar descuento sin especifica
     @NroSocio = NULL;
 GO
 ------------------------------------------GRUPO FAMILIAR - SOCIOS
-select s.NroSocio, g.IdGrupoFamiliar from Socios.GrupoFamiliar g inner join socios.Socio s on g.IdGrupoFamiliar=s.IdGrupoFamiliar
-where s.NroSocio ='SN-4052' or s.NroSocio= 'SN-4012' --Muestra el NroSocio y IdGrupoFamiliar de los Socios especificados
-go
- 
 EXEC Socios.AgregarSocioGrupoFamiliar   @NroSocioTitular = 'SN-4001',   @NroSocioIntegrante = 'SN-4012';--Agrega un Socio a un Grupo Familiar
 go
 
