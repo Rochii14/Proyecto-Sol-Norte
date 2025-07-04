@@ -11,11 +11,7 @@
 USE Com5600G08
 go
 
-<<<<<<< HEAD
 CREATE OR ALTER PROCEDURE Accesos.Importar_Clima  @RutaArchivo VARCHAR(200)
-=======
-CREATE OR ALTER PROCEDURE ddbbaTP.Importar_Clima  @RutaArchivo VARCHAR(200)
->>>>>>> recuperar-historial
 AS
 BEGIN
     CREATE TABLE #carga_Clima_Temp (
@@ -39,30 +35,21 @@ BEGIN
     EXEC sp_executesql @SQL_Clima;
 	--select * from #carga_Clima_Temp
 
-<<<<<<< HEAD
 	INSERT INTO Accesos.Dia_Lluvia (Fecha)
-=======
-	INSERT INTO ddbbaTP.Dia_Lluvia (Fecha)
->>>>>>> recuperar-historial
 	SELECT DISTINCT 
 		CAST(TRY_CAST(REPLACE(fechaYHora, 'T', ' ') AS DATETIME) AS DATE)
 	FROM #carga_Clima_Temp
 	WHERE TRY_CAST(REPLACE(lluvia, ',', '.') AS DECIMAL(8,2)) > 0
 	  AND TRY_CAST(REPLACE(fechaYHora, 'T', ' ') AS DATETIME) IS NOT NULL
 	  AND CAST(TRY_CAST(REPLACE(fechaYHora, 'T', ' ') AS DATETIME) AS DATE) NOT IN (
-<<<<<<< HEAD
 		  SELECT Fecha FROM Accesos.Dia_Lluvia
-=======
-		  SELECT Fecha FROM ddbbaTP.Dia_Lluvia
->>>>>>> recuperar-historial
 	  );
 
      DROP TABLE #carga_Clima_Temp;
 END;
 go
 
-<<<<<<< HEAD
-EXEC Accesos.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensión .csv UTF-8
+EXEC Accesos.Importar_Clima 'C:\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensión .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
@@ -92,7 +79,6 @@ BEGIN
 
     EXEC sp_executesql @sql;
 
-    
     CREATE TABLE #DiasLluvia (
         Fecha DATE-- Tabla temporal para fechas parseadas
     );
@@ -123,16 +109,8 @@ BEGIN
 END;
 go
 
-EXEC Accesos.Importar_Clima2 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensión .csv UTF-8
+EXEC Accesos.Importar_Clima2 'C:\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensión .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
-=======
-EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensión .csv UTF-8
-go
-EXEC ddbbaTP.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo con extensión .csv UTF-8
-go
-
-select * from ddbbaTP.Dia_LLuvia
->>>>>>> recuperar-historial
 go
