@@ -21,133 +21,234 @@ El segundo vencimiento son hasta 5 días corridos luego del primer vencimiento y 
 
 /*    @NroSocio VARCHAR(10),   @Tipo VARCHAR(20), -- 'Categoria' | 'Actividad' @NombreActividad VARCHAR(100)*/
 
-execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
-go
-execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Natación'
-go
-execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Vóley'
-go
-execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio='SN-4091', @Tipo= 'Actividad', @NombreActividad = 'Ajedrez'
-go
+--Morosos Recurrentes	01/11/2024 - 01/06/2025	TEST-001	PRUEBA MOROSO	2024-12, 2025-01, 2025-03	3
+ 
+CREATE OR ALTER PROCEDURE Facturacion.GenerarCasosPruebaMorosos
 
---@IdFactura INT,@FechaVencimiento VARCHAR(10) = NULL, @DiasAtrasados INT = NULL,            
--- @Estado VARCHAR(20) = NULL, @IdDescuento INT = NULL, @IdCuota INT = NULL, @MontoTotal DECIMAL(10,2) = NULL, @Detalle VARCHAR(255) = NULL          
---@FecheEmision varchar(10)
-
-
-EXECUTE Facturacion.ModificarFactura @IdFactura= 2863 , @FechaVencimiento= '2025-01-24',@DiasAtrasados = null,
-@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2887, @MontoTotal= null, @FechaEmision = '2025-01-19'
-go
-
-EXECUTE Facturacion.ModificarFactura @IdFactura= 2862, @FechaVencimiento= '2025-02-24',@DiasAtrasados = null,
-@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2886, @MontoTotal= null, @FechaEmision = '2025-02-19'
-go
-
-EXECUTE Facturacion.ModificarFactura @IdFactura= 2860, @FechaVencimiento= '2025-03-24',@DiasAtrasados = null,
-@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=2884, @MontoTotal= null, @FechaEmision = '2025-03-19'
-go
-
-EXECUTE Facturacion.ModificarFactura @IdFactura= 2885, @FechaVencimiento= '2024-12-24',@DiasAtrasados = null,
-@Estado= 'Pendiente', @IdDescuento= null, @IdCuota=null, @MontoTotal= null, @FechaEmision = '2024-12-19'
-go
-
-SELECT * FROM Facturacion.Factura
-go
-EXECUTE Facturacion.Actualizar_Morosidad
-go
-SELECT * FROM Facturacion.Factura
-go
-CREATE OR ALTER PROCEDURE Facturacion.Reporte_1
-    @FechaInicio DATE, -- Fecha de inicio del rango para considerar la morosidad
-    @FechaFin DATE     -- Fecha de fin del rango para considerar la morosidad
 AS
+
 BEGIN
+
     SET NOCOUNT ON;
 
-    -- Validar que las fechas sean válidas
-    IF @FechaInicio IS NULL OR @FechaFin IS NULL OR @FechaInicio > @FechaFin
-    BEGIN
-        THROW 50000, 'Las fechas de inicio y fin del período son inválidas o el rango es incorrecto.', 1;
-    END;
+    -- 1. Crear un socio ficticio de prueba si no existe
 
-    -- CTE (Common Table Expression) para identificar los meses individuales de incumplimiento para cada socio
-    -- El punto y coma (;) es crucial antes de WITH si la sentencia anterior no terminó con uno.
-    WITH SocioIncumplimientoDetalle AS (
-        SELECT DISTINCT
-            S.NroSocio,
-            S.Nombre,
-            S.Apellido,
-            -- Formato 'AAAA-MM' para identificar meses únicos de incumplimiento (ej. '2024-06')
-            -- Se quita el estilo 103 de TRY_CONVERT para que infiera y funcione con 'yyyy-mm-dd'
-            CAST(YEAR(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(4)) + '-' +
-            RIGHT('0' + CAST(MONTH(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(2)), 2) AS MesIncumplidoAnio
-        FROM
-            Facturacion.Factura AS F
-        INNER JOIN
-            Facturacion.Cuota AS C ON F.IdCuota = C.IdCuota
-        INNER JOIN
-            Socios.Socio AS S ON C.NroSocio = S.NroSocio
-        WHERE
-            -- Condiciones para que una factura se considere 'morosa'
-            (F.Estado = 'Vencido' OR F.Dias_Atrasados > 0)
-            -- Filtrar por el rango de fechas de vencimiento de la factura
-            -- Se quita el estilo 103 de TRY_CONVERT
-            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) BETWEEN @FechaInicio AND @FechaFin
-    ),
-    -- CTE para calcular el ranking de morosidad para cada socio
-    SocioRanking AS (
-        SELECT
-            NroSocio,
-            Nombre,
-            Apellido,
-            MesIncumplidoAnio,
-            -- Usamos una función de ventana COUNT para calcular el número de meses distintos de incumplimiento
-            -- Esto se convierte en nuestro 'Ranking de Morosidad'
-            COUNT(MesIncumplidoAnio) OVER (PARTITION BY NroSocio) AS RankingMorosidad
-        FROM
-            SocioIncumplimientoDetalle
-    ),
-    -- CTE final para agregar los meses incumplidos y filtrar por el requisito de recurrencia
-    SocioMorososRecurrentes AS (
-        SELECT
-            NroSocio,
-            Nombre,
-            Apellido,
-            -- Concatenar todos los meses incumplidos en una sola cadena para cada socio
-            STRING_AGG(MesIncumplidoAnio, ', ') WITHIN GROUP (ORDER BY MesIncumplidoAnio) AS MesesIncumplidos,
-            MAX(RankingMorosidad) AS RankingMorosidad -- Tomar el ranking calculado por la función de ventana
-        FROM
-            SocioRanking
-        GROUP BY
-            NroSocio,
-            Nombre,
-            Apellido
-        HAVING
-            MAX(RankingMorosidad) > 2 -- Filtro principal: socios con más de dos oportunidades (meses) incumplidas
+    IF NOT EXISTS (
+
+        SELECT 1 FROM Socios.Socio WHERE NroSocio = 'TEST-001'
+
     )
-    -- Selección final de los datos del reporte
-    SELECT
-        'Morosos Recurrentes' AS 'Reporte_1_:Morosos_Recurrentes',
-        CONVERT(NVARCHAR(10), @FechaInicio, 103) + ' - ' + CONVERT(NVARCHAR(10), @FechaFin, 103) AS 'Período',
-        FinalReport.NroSocio AS 'Nro de socio',
-        FinalReport.Nombre + ' ' + FinalReport.Apellido AS 'Nombre y Apellido',
-        FinalReport.MesesIncumplidos AS 'Meses Incumplidos',
-        FinalReport.RankingMorosidad AS 'Ranking de Morosidad' -- Número total de meses incumplidos
-    FROM
-        SocioMorososRecurrentes AS FinalReport
-    ORDER BY
-        FinalReport.RankingMorosidad DESC, -- Ordenar de Mayor a menor por ranking de morosidad
-        FinalReport.Nombre,
-        FinalReport.Apellido,
-        FinalReport.NroSocio;
+
+    BEGIN
+
+        INSERT INTO Socios.Socio (NroSocio, Nombre, Apellido)
+
+        VALUES ('TEST-001', 'PRUEBA', 'MOROSO');
+
+    END
+
+    -- 2. Insertar 3 cuotas para ese socio
+
+    DECLARE @IdCuota1 INT, @IdCuota2 INT, @IdCuota3 INT;
+
+    INSERT INTO Facturacion.Cuota (NroSocio)
+
+    VALUES ('TEST-001'); 
+
+    SET @IdCuota1 = SCOPE_IDENTITY();
+
+    INSERT INTO Facturacion.Cuota (NroSocio)
+
+    VALUES ('TEST-001');
+
+    SET @IdCuota2 = SCOPE_IDENTITY();
+
+    INSERT INTO Facturacion.Cuota (NroSocio)
+
+    VALUES ('TEST-001');
+
+    SET @IdCuota3 = SCOPE_IDENTITY();
+
+    -- 3. Insertar facturas vencidas en meses diferentes (dentro del rango)
+
+    INSERT INTO Facturacion.Factura (IdCuota, Fecha_Vencimiento, Estado, Dias_Atrasados)
+
+    VALUES 
+
+        (@IdCuota1, '2024-12-10', 'Vencido', 15),
+
+        (@IdCuota2, '2025-01-15', 'Vencido', 20),
+
+        (@IdCuota3, '2025-03-20', 'Vencido', 30);
+
 END;
+
 go
 
-EXECUTE Facturacion.Reporte_1
-    @FechaInicio = '2024-11-01', 
-    @FechaFin ='2025-06-01'
+EXEC Facturacion.GenerarCasosPruebaMorosos;
+
 go
 
+EXECUTE Facturacion.Actualizar_Morosidad
+
+go
+ 
+CREATE OR ALTER PROCEDURE Facturacion.Reporte_1
+
+    @FechaInicio DATE, -- Fecha de inicio del rango para considerar la morosidad
+
+    @FechaFin DATE     -- Fecha de fin del rango para considerar la morosidad
+
+AS
+
+BEGIN
+
+    SET NOCOUNT ON;
+ 
+    -- Validar que las fechas sean válidas
+
+    IF @FechaInicio IS NULL OR @FechaFin IS NULL OR @FechaInicio > @FechaFin
+
+    BEGIN
+
+        THROW 50000, 'Las fechas de inicio y fin del período son inválidas o el rango es incorrecto.', 1;
+
+    END;
+ 
+    WITH SocioIncumplimientoDetalle AS (
+
+        SELECT DISTINCT
+
+            S.NroSocio,
+
+            S.Nombre,
+
+            S.Apellido,
+
+            CAST(YEAR(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(4)) + '-' +
+
+            RIGHT('0' + CAST(MONTH(TRY_CONVERT(DATE, F.Fecha_Vencimiento)) AS NVARCHAR(2)), 2) AS MesIncumplidoAnio
+
+        FROM
+
+            Facturacion.Factura AS F
+
+        INNER JOIN
+
+            Facturacion.Cuota AS C ON F.IdCuota = C.IdCuota
+
+        INNER JOIN
+
+            Socios.Socio AS S ON C.NroSocio = S.NroSocio
+
+        WHERE
+
+            -- Condiciones para que una factura se considere 'morosa'
+
+            (F.Estado = 'Vencido' OR F.Dias_Atrasados > 0)
+
+            AND TRY_CONVERT(DATE, F.Fecha_Vencimiento) BETWEEN @FechaInicio AND @FechaFin
+
+    ),
+
+    -- CTE para calcular el ranking de morosidad para cada socio
+
+    SocioRanking AS (
+
+        SELECT
+
+            NroSocio,
+
+            Nombre,
+
+            Apellido,
+
+            MesIncumplidoAnio,
+
+            -- Usamos una función de ventana COUNT para calcular el número de meses distintos de incumplimiento
+
+            -- Esto se convierte en nuestro 'Ranking de Morosidad'
+
+            COUNT(MesIncumplidoAnio) OVER (PARTITION BY NroSocio) AS RankingMorosidad
+
+        FROM
+
+            SocioIncumplimientoDetalle
+
+    ),
+
+    -- CTE final para agregar los meses incumplidos y filtrar por el requisito de recurrencia
+
+    SocioMorososRecurrentes AS (
+
+        SELECT
+
+            NroSocio,
+
+            Nombre,
+
+            Apellido,
+
+            -- Concatenar todos los meses incumplidos en una sola cadena para cada socio
+
+            STRING_AGG(MesIncumplidoAnio, ', ') WITHIN GROUP (ORDER BY MesIncumplidoAnio) AS MesesIncumplidos,
+
+            MAX(RankingMorosidad) AS RankingMorosidad -- Tomar el ranking calculado por la función de ventana
+
+        FROM
+
+            SocioRanking
+
+        GROUP BY
+
+            NroSocio,
+
+            Nombre,
+
+            Apellido
+
+        HAVING MAX(RankingMorosidad) > 2-- Filtro principal: socios con más de dos oportunidades (meses) incumplidas
+
+    )
+
+    -- Selección final de los datos del reporte
+
+    SELECT
+
+        'Morosos Recurrentes' AS 'Reporte_1_:Morosos_Recurrentes',
+
+        CONVERT(NVARCHAR(10), @FechaInicio, 103) + ' - ' + CONVERT(NVARCHAR(10), @FechaFin, 103) AS 'Período',
+
+        FinalReport.NroSocio AS 'Nro de socio',
+
+        FinalReport.Nombre + ' ' + FinalReport.Apellido AS 'Nombre y Apellido',
+
+        FinalReport.MesesIncumplidos AS 'Meses Incumplidos',
+
+        FinalReport.RankingMorosidad AS 'Ranking de Morosidad' -- Número total de meses incumplidos
+
+    FROM
+
+        SocioMorososRecurrentes AS FinalReport
+
+    ORDER BY
+
+        FinalReport.RankingMorosidad DESC, -- Ordenar de Mayor a menor por ranking de morosidad
+
+        FinalReport.Nombre,
+
+        FinalReport.Apellido,
+
+        FinalReport.NroSocio;
+
+END;
+
+go
+ 
+EXECUTE Facturacion.Reporte_1 @FechaInicio = '2024-11-01', @FechaFin ='2025-06-01'
+
+go
+ 
 ---------------------------------------------------------------------------------------------------------------------------------------
 /*REPORTE 2:
 Reporte acumulado mensual de ingresos por actividad deportiva al momento en que se saca el reporte tomando como inicio enero.*/

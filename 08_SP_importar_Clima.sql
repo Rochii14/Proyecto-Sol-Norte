@@ -49,7 +49,7 @@ BEGIN
 END;
 go
 
-EXEC Accesos.Importar_Clima 'C:\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensión .csv UTF-8
+EXEC Accesos.Importar_Clima 'C:\_temp\open-meteo-buenosaires_2024.csv' --Guardamos el archivo en extensión .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
@@ -109,8 +109,9 @@ BEGIN
 END;
 go
 
-EXEC Accesos.Importar_Clima2 'C:\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensión .csv UTF-8
+EXEC Accesos.Importar_Clima2 'C:\_temp\open-meteo-buenosaires_2025.csv' --Guardamos el archivo en extensión .csv UTF-8
 go
 
 SELECT * FROM Accesos.Dia_LLuvia
 go
+

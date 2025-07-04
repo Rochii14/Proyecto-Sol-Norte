@@ -4,7 +4,7 @@
     <LogicalFolder Name="Connections" Type="2" Sorted="true">
       <Items>
         <ConnectionNode Name="5AMMYS\SQLEXPRESS:5AMMYS\samue">
-          <Created>2025-07-03T12:52:20.0079336-03:00</Created>
+          <Created>2025-07-03T22:14:26.0406573-03:00</Created>
           <Type>SQL</Type>
           <Server>5AMMYS\SQLEXPRESS</Server>
           <UserName />
@@ -83,28 +83,34 @@
           <FullPath>09_SP_Importar_Pagos_Cuotas.sql</FullPath>
         </FileNode>
         <FileNode Name="10_Reportes.sql">
-          <AssociatedConnectionMoniker />
-          <AssociatedConnSrvName />
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
           <FullPath>10_Reportes.sql</FullPath>
         </FileNode>
-        <FileNode Name="11_Asignar_Roles.sql">
-          <AssociatedConnectionMoniker />
-          <AssociatedConnSrvName />
+        <FileNode Name="11_Logins_Usuarios.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>11_Asignar_Roles.sql</FullPath>
+          <FullPath>11_Logins_Usuarios.sql</FullPath>
         </FileNode>
-        <FileNode Name="12_Cifrado.sql">
-          <AssociatedConnectionMoniker />
-          <AssociatedConnSrvName />
+        <FileNode Name="12_Roles_Permisos.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>12_Cifrado.sql</FullPath>
+          <FullPath>12_Roles_Permisos.sql</FullPath>
         </FileNode>
-        <FileNode Name="13_Informes_5_XML.sql">
-          <AssociatedConnectionMoniker />
-          <AssociatedConnSrvName />
+        <FileNode Name="13_Cifrado.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
-          <FullPath>13_Informes_5_XML.sql</FullPath>
+          <FullPath>13_Cifrado.sql</FullPath>
+        </FileNode>
+        <FileNode Name="14_Informes_5_XML.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>14_Informes_5_XML.sql</FullPath>
         </FileNode>
       </Items>
     </LogicalFolder>

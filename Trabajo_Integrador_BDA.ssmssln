@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# SQL Server Management Studio Solution File, Format Version 20.00
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{4F2E2C19-372F-40D8-9FA7-9D2138C6997A}") = "Trabajo_Integrador_BDA", "Trabajo_Integrador_BDA.ssmssqlproj", "{F469A3EF-A5F2-457D-AB93-FD6DC5EEA29A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|Default = Default|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F469A3EF-A5F2-457D-AB93-FD6DC5EEA29A}.Default|Default.ActiveCfg = Default
+		{4FD2F06F-86A9-46F6-938B-410A7D42AA7F}.Default|Default.ActiveCfg = Default
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A72F871-3CE4-4152-A09F-604BB28E1FF6}
+	EndGlobalSection
+EndGlobal

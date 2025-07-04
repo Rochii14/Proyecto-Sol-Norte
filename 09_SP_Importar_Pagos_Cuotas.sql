@@ -447,7 +447,7 @@ END;
 ----elupdate es para ver si se genera una factura con una fecha vigente, de otro modo no la genera
 ----update Accesos.TarifaPileta set VigenteHasta = '20251212' where IdTarifa= 2 or IdTarifa=1
 
-
+go
 ---------- ------------------------------------ ANULAR última FACTURA  de un socio que se dio de baja
 CREATE OR ALTER PROCEDURE Facturacion.AnularFacturasPorBajaSocio @NroSocio VARCHAR(10)
 AS
@@ -532,7 +532,7 @@ BEGIN
         -- Actualizar factura a estado "Pagada"
         UPDATE Facturacion.Factura
         SET Estado = 'Pagada',
-            Fecha_Pago = GETDATE()  
+            Fecha_Pago = GETDATE()  -- Solo si tenés esta columna
         WHERE IdFactura = @IdFactura;
 
         COMMIT TRANSACTION;
@@ -546,7 +546,7 @@ BEGIN
 END;
 
 ------------------------------Actalizar factura
-
+go
 CREATE OR ALTER PROCEDURE Facturacion.ModificarFactura
     @IdFactura INT,
     @FechaVencimiento VARCHAR(10) = NULL, -- Nueva fecha de vencimiento (opcional)
@@ -662,7 +662,7 @@ BEGIN
 	DROP TABLE #PagosValidos;
 END;
  
- 
+go
 CREATE OR ALTER PROCEDURE Facturacion.ReembolsoPorCobro @IdPago BIGINT,  @Monto DECIMAL(10,2),  @Modalidad VARCHAR(30), @FechaLluvia DATE = NULL
 AS
 BEGIN
@@ -701,3 +701,52 @@ BEGIN
     END
 END;
 GO
+
+select * from Facturacion.Factura
+go
+execute Facturacion.GenerarCuotaYFacturaMembresiaYActividades @NroSocio ='SN-4139', @Tipo ='Categoria' , @NombreActividad=null
+go
+select * from Facturacion.Factura
+go
+
+select * from Facturacion.Reembolso                                 
+
+execute Facturacion.ReembolsoPorLluvia
+ 
+select * from Facturacion.Reembolso 
+
+go
+
+execute Facturacion.ReembolsoPorCobro @IdPago=107433442827, @Monto= 15000.00, @Modalidad = Cobro, @FechaLluvia = NULL
+
+go
+
+select * from Facturacion.Reembolso 
+go
+select * from Socios.Cuenta
+go
+select * from Facturacion.Factura where IdFactura=7036
+go
+execute Facturacion.ModificarFactura     @IdFactura=7036,
+
+    @FechaVencimiento  = NULL, -- Nueva fecha de vencimiento (opcional)
+
+    @DiasAtrasados  = 5,            -- Nuevos días de atraso (opcional)
+
+    @Estado = NULL,           -- Nuevo estado de la factura (opcional)
+
+    @IdDescuento  = 3,              -- Nuevo IdDescuento (opcional)
+
+    @IdCuota  = NULL,                  -- Nuevo IdCuota (opcional)
+
+    @MontoTotal   = NULL,     -- Nuevo Monto_Total (opcional)
+
+    @Detalle   = NULL,         -- Nuevo Detalle de la factura (opcional)
+
+    @FechaEmision  = NULL      -- Nueva Fecha_Emision (opcional)
+ 
+ 
+select * from Facturacion.Factura where IdFactura=7036
+go
+select * from Facturacion.Descuento
+go 

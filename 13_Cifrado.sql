@@ -11,9 +11,15 @@
 USE Com5600G08
 go
 
---CRACIÓN DE TABLA EMPLEADO
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'SolNorte')
+BEGIN
+	EXEC ('CREATE SCHEMA SolNorte')
+END;
+go
 
-CREATE TABLE ddbbaTP.Empleado (
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'SolNorte' AND TABLE_NAME = 'Empleado')
+BEGIN
+CREATE TABLE SolNorte.Empleado (
 	Id INT PRIMARY KEY,
 	Dni VARBINARY (MAX),
 	Nombre VARCHAR(50),
@@ -21,12 +27,12 @@ CREATE TABLE ddbbaTP.Empleado (
 	Email VARBINARY(MAX),
 	Nro_Telefono VARBINARY(MAX),
 	Puesto VARCHAR(30) );
+end;
 go
-
 
 --CREACIÓN DE SP PARA INSERTTAR EMPLEADOS CON DATOS SENSIBLES CIFRADOS
 
-CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Empleado_Cifrado
+CREATE OR ALTER PROCEDURE SolNorte.Insertar_Empleado_Cifrado
 	@Id INT,
 	@Dni NVARCHAR (12),
 	@Nombre VARCHAR(50),
@@ -37,31 +43,31 @@ CREATE OR ALTER PROCEDURE ddbbaTP.Insertar_Empleado_Cifrado
 	@FraseClave NVARCHAR(128)
 AS
 BEGIN
-	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Id = @Id)
+	IF EXISTS (SELECT 1 FROM SolNorte.Empleado WHERE Id = @Id)
     BEGIN
         PRINT ('El Id ya existe. No se inserto el registro');
         RETURN;
 	END;
 
-	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Dni = @Dni)
+	IF EXISTS (SELECT 1 FROM SolNorte.Empleado WHERE Dni = @Dni)
     BEGIN
         PRINT ('El dni ya existe. No se inserto el registro');
         RETURN;
 	END;
 
-	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Email = @Email)
+	IF EXISTS (SELECT 1 FROM SolNorte.Empleado WHERE Email = @Email)
     BEGIN
         PRINT ('El email ya existe. No se inserto el registro');
         RETURN;
 	END;
 
-	IF EXISTS (SELECT 1 FROM ddbbaTP.Empleado WHERE Nro_Telefono = @Nro_Telefono)
+	IF EXISTS (SELECT 1 FROM SolNorte.Empleado WHERE Nro_Telefono = @Nro_Telefono)
     BEGIN
         PRINT ('El numero de telefono ya existe. No se inserto el registro');
         RETURN;
     END;
 
-	INSERT INTO ddbbaTP.Empleado (Id, Dni, Nombre, Apellido, Email, Nro_Telefono, Puesto) VALUES
+	INSERT INTO SolNorte.Empleado (Id, Dni, Nombre, Apellido, Email, Nro_Telefono, Puesto) VALUES
 	( 
 		@Id,
 		EncryptByPassPhrase ( @FraseClave, @Dni, 1, CONVERT(VARBINARY, @Id) ),
@@ -77,7 +83,7 @@ go
 
 --CREACIÓN PARA DESENCRIPTAR DATOS SENSIBLES DE EMPLEADOS
 
-CREATE OR ALTER PROCEDURE ddbbaTP.Desencriptar_Empleado
+CREATE OR ALTER PROCEDURE SolNorte.Desencriptar_Empleado
     @Id INT,
     @FraseClave NVARCHAR(128)
 AS
@@ -90,7 +96,7 @@ BEGIN
 		CONVERT(NVARCHAR(100), DecryptByPassPhrase(@FraseClave, Email, 1, CONVERT(VARBINARY, Id)) ) AS Email,
 		CONVERT(NVARCHAR(15), DecryptByPassPhrase(@FraseClave, Nro_Telefono, 1, CONVERT(VARBINARY, Id)) ) AS Nro_Telefono,
         Puesto
-    FROM ddbbaTP.Empleado
+    FROM SolNorte.Empleado
     WHERE Id = @Id;
 END;
 go
@@ -98,23 +104,23 @@ go
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 --PRUEBAS:
 
-EXEC ddbbaTP.Insertar_Empleado_Cifrado 1, 46346548, 'Javier Juan', 'Mendez', 'Mendez@gmail.com', '11-42376512', 'Presidente', 'MiPerro123'
+EXEC SolNorte.Insertar_Empleado_Cifrado 1, 46346548, 'Javier Juan', 'Mendez', 'Mendez@gmail.com', '11-42376512', 'Presidente', 'MiPerro123'
 go	--Debe insertar
 
-EXEC ddbbaTP.Insertar_Empleado_Cifrado 2, 42356548, 'Marcos Martin', 'Dotta', 'Dotta@gmail.com', '11-11345103', 'Administrador', 'Messi'  
+EXEC SolNorte.Insertar_Empleado_Cifrado 2, 42356548, 'Marcos Martin', 'Dotta', 'Dotta@gmail.com', '11-11345103', 'Administrador', 'Messi'  
 go	--Debe insertar
 
-EXEC ddbbaTP.Insertar_Empleado_Cifrado 2, 42356548, 'Marcos Martin', 'Dotta', 'Dotta@gmail.com', '11-11345103', 'Administrador', 'Messi'   
+EXEC SolNorte.Insertar_Empleado_Cifrado 2, 42356548, 'Marcos Martin', 'Dotta', 'Dotta@gmail.com', '11-11345103', 'Administrador', 'Messi'   
 go	--Debe no insertar, repite ID
 
-SELECT * FROM ddbbaTP.Empleado
+SELECT * FROM SolNorte.Empleado
 
-EXEC ddbbaTP.Desencriptar_Empleado 1, 'MiPerro123'
+EXEC SolNorte.Desencriptar_Empleado 1, 'MiPerro123'
 go --Debe mostrar datos
 
-EXEC ddbbaTP.Desencriptar_Empleado 2, 'Messi'
+EXEC SolNorte.Desencriptar_Empleado 2, 'Messi'
 go --Debe mostrar datos
 
-EXEC ddbbaTP.Desencriptar_Empleado 2, 'Mesi'
+EXEC SolNorte.Desencriptar_Empleado 2, 'Mesi'
 go --Debe mostrar datos sensibles en NULL (La FraseClave del empleado 2 es incorrecta)
 
