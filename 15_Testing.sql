@@ -17,7 +17,7 @@
 USE Com5600G08
 go
 ----------------------------------------- P1
-
+/*
 EXEC Socios.InsertarCategoria 'Menor', 45789.12, '2025-10-12', 'Inactivo' --Debe insertar el registro correctamente
 GO
 
@@ -229,6 +229,7 @@ EXEC Facturacion.ModificarDescuento       --  Modificar descuento sin especifica
     @IdGrupoFamiliar = NULL,
     @NroSocio = NULL;
 GO
+*/
 ------------------------------------------GRUPO FAMILIAR - SOCIOS
 EXEC Socios.AgregarSocioGrupoFamiliar   @NroSocioTitular = 'SN-4001',   @NroSocioIntegrante = 'SN-4012';--Agrega un Socio a un Grupo Familiar
 go

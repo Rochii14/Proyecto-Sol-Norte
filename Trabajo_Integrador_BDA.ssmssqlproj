@@ -52,12 +52,6 @@
           <AssociatedConnUserName />
           <FullPath>04_SP_Importar_GF.sql</FullPath>
         </FileNode>
-        <FileNode Name="05_Testing.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
-          <AssociatedConnUserName />
-          <FullPath>05_Testing.sql</FullPath>
-        </FileNode>
         <FileNode Name="06_SP_Importar_Tarifas.sql">
           <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
           <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
@@ -111,6 +105,12 @@
           <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
           <AssociatedConnUserName />
           <FullPath>14_Informes_5_XML.sql</FullPath>
+        </FileNode>
+        <FileNode Name="15_Testing.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:5AMMYS\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>5AMMYS\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>15_Testing.sql</FullPath>
         </FileNode>
       </Items>
     </LogicalFolder>
