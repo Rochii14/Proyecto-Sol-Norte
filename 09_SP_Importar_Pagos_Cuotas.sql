@@ -532,7 +532,7 @@ BEGIN
         -- Actualizar factura a estado "Pagada"
         UPDATE Facturacion.Factura
         SET Estado = 'Pagada',
-            Fecha_Pago = GETDATE()  -- Solo si tenés esta columna
+            Fecha_Pago = GETDATE()  
         WHERE IdFactura = @IdFactura;
 
         COMMIT TRANSACTION;
