@@ -118,18 +118,6 @@ BEGIN
 END;
  
 go
- 
-select s.NroSocio, g.IdGrupoFamiliar from Socios.GrupoFamiliar g inner join socios.Socio s on g.IdGrupoFamiliar=s.IdGrupoFamiliar
-where s.NroSocio ='SN-4052' or s.NroSocio= 'SN-4012'
-go
- 
-EXEC Socios.AgregarSocioGrupoFamiliar   @NroSocioTitular = 'SN-4001',   @NroSocioIntegrante = 'SN-4012';
- 
-go
- 
-select s.NroSocio, g.IdGrupoFamiliar from Socios.GrupoFamiliar g inner join socios.Socio s on g.IdGrupoFamiliar=s.IdGrupoFamiliar
-where s.NroSocio ='SN-4052' or s.NroSocio= 'SN-4012'
-go
 
 CREATE OR ALTER PROCEDURE Socios.EliminarSocioGrupoFamiliar @NroSocio VARCHAR(10)
 
@@ -180,17 +168,6 @@ BEGIN
     PRINT 'El socio fue eliminado del grupo familiar correctamente.';
 
 END;
- 
-select s.NroSocio, g.IdGrupoFamiliar from Socios.GrupoFamiliar g inner join socios.Socio s on g.IdGrupoFamiliar=s.IdGrupoFamiliar
-
-where s.NroSocio ='SN-4148'
- 
-EXEC Socios.EliminarSocioGrupoFamiliar @NroSocio = 'SN-4148';
- 
-select s.NroSocio, g.IdGrupoFamiliar from [Socios].[GrupoFamiliar] g inner join socios.Socio s on g.IdGrupoFamiliar=s.IdGrupoFamiliar
-
-where s.NroSocio ='SN-4148'
- 
 
 
 
