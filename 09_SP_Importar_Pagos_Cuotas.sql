@@ -156,12 +156,13 @@ go
 
 ----------NUEVAS CUOTAS Y FACTURAS
 CREATE OR ALTER PROCEDURE Facturacion.GenerarCuotaYFacturaMembresiaYActividades 
-    @NroSocio VARCHAR(10),
+    @NroSocio VARCHAR(10),  
     @Tipo VARCHAR(20), -- 'Categoria' | 'Actividad'
     @NombreActividad VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
+
     BEGIN TRY
         BEGIN TRANSACTION;
 
@@ -220,25 +221,34 @@ BEGIN
 
             IF @IdGrupoFamiliarSocio IS NOT NULL
                 SET @PorcentajeDescuento = 15;
+            ELSE
+                SET @PorcentajeDescuento = 0;
         END
         ELSE IF @Tipo = 'Actividad'
         BEGIN
             IF @NombreActividad IS NULL OR @NombreActividad = ''
+            BEGIN
                 SELECT TOP 1 @NombreActividad = a.Nombre
                 FROM Clases.Inscripto i
                 JOIN Clases.Actividad a ON i.IdActividad = a.IdActividad
                 WHERE i.NroSocio = @NroSocio
                   AND TRY_CONVERT(DATE, i.FechaInscripcion, 103) IS NOT NULL
                 ORDER BY TRY_CONVERT(DATE, i.FechaInscripcion, 103) DESC;
+            END
 
             IF @NombreActividad IS NULL OR @NombreActividad = ''
                 THROW 50001, 'No se especificó actividad válida.', 1;
 
             EXEC Clases.Asignar_Monto_Actividad @NombreAct = @NombreActividad, @MontoBaseS = @MontoBase OUTPUT;
 
-            SELECT @CantAct = COUNT(*) FROM Clases.Inscripto WHERE NroSocio = @NroSocio;
+            SELECT @CantAct = COUNT(*) 
+            FROM Clases.Inscripto 
+            WHERE NroSocio = @NroSocio;
+
             IF @CantAct > 1
                 SET @PorcentajeDescuento = 10;
+            ELSE
+                SET @PorcentajeDescuento = 0;
         END
         ELSE
             THROW 50000, 'Tipo inválido.', 1;
@@ -266,26 +276,24 @@ BEGIN
             END
         END
 
-        -- 7) Insertar factura con fecha de emisión y ambos vencimientos
+        -- 7) Insertar factura
         INSERT INTO Facturacion.Factura 
             (Fecha_Emision, Fecha_Vencimiento, Fecha_Vencimiento2, Monto_Total, Dias_Atrasados, Estado, IdDescuento, IdCuota, Detalle)
         VALUES 
             (
-                CONVERT(VARCHAR(10), @FechaEmision, 120),      -- yyyy-MM-dd
-                CONVERT(VARCHAR(10), @FechaVencimiento, 120),  -- yyyy-MM-dd
-                CONVERT(VARCHAR(10), @FechaVencimiento2, 120), -- yyyy-MM-dd
+                CONVERT(VARCHAR(10), @FechaEmision, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento, 120),
+                CONVERT(VARCHAR(10), @FechaVencimiento2, 120),
                 @MontoFinal, 0, 'Pendiente', @IdDescuento, @IdCuota, @NombreActividad
             );
 
         COMMIT TRANSACTION;
-
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
         THROW;
     END CATCH
 END;
-GO
 ---------->comprobación de que se inserta y modifica la factura
 select * from Facturacion.Factura
 go
