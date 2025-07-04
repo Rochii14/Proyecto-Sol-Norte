@@ -507,10 +507,18 @@ go
 
 --NOTA: No se actualizan las clases a las que está anotado el socio ni su grupo familiar por el momento
 -------------------------------------------------- PAGAR CUOTA/factura
-CREATE OR ALTER PROCEDURE Facturacion.PagarFactura @IdFactura INT
+CREATE OR ALTER PROCEDURE Facturacion.PagarFactura 
+    @IdFactura INT,
+    @IdMedioDePago INT
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    DECLARE @Monto DECIMAL(10,2);
+	DECLARE @NuevoIdPago BIGINT;
+   -- DECLARE @IdCuenta INT; -- Solo si lo necesitás
+    -- DECLARE @FechaDePago VARCHAR(10); -- Usar GETDATE() directamente
+
     BEGIN TRY
         BEGIN TRANSACTION;
 
@@ -529,6 +537,30 @@ BEGIN
             THROW 60001, 'La factura ya fue pagada.', 1;
         END
 
+        -- Obtener monto y cuenta desde la factura
+        SELECT 
+            @Monto = Monto_Total  -- Ajustar nombre si es distinto
+            --@IdCuenta = IdCuenta  -- Ajustar si aplica
+        FROM Facturacion.Factura
+        WHERE IdFactura = @IdFactura;
+		SELECT @NuevoIdPago = ISNULL(MAX(IdPago), 0) + 1 FROM Facturacion.Pago;
+        -- Insertar en la tabla Pago
+        INSERT INTO Facturacion.Pago (
+		 IdPago,
+            Fecha_de_Pago,
+            --IdCuenta,
+            IdFactura,
+            IdMedioDePago,
+            Monto
+        )
+        VALUES (@NuevoIdPago,
+            CONVERT(VARCHAR(10), GETDATE(), 120),  -- formato 'yyyy-mm-dd'
+            --@IdCuenta,
+            @IdFactura,
+            @IdMedioDePago,
+            @Monto
+        );
+
         -- Actualizar factura a estado "Pagada"
         UPDATE Facturacion.Factura
         SET Estado = 'Pagada',
@@ -544,6 +576,8 @@ BEGIN
         THROW;
     END CATCH
 END;
+
+
 
 ------------------------------Actalizar factura
 go
